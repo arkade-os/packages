@@ -226,6 +226,11 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content bottom-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
+          {method !== null && !generatedInvoice && (
+            <button className="modal-back" onClick={() => setMethod(null)} disabled={loading}>
+              ←
+            </button>
+          )}
           <h2 className="modal-title">
             {method === null && '📥 Receive'}
             {method === 'arkade' && '⚡ Receive via Arkade'}
@@ -240,24 +245,6 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
           {method === null && renderMethodSelector()}
           {method === 'arkade' && renderArkadeAddresses()}
           {method === 'lightning' && renderLightningForm()}
-        </div>
-
-        <div className="modal-footer">
-          {method !== null && !generatedInvoice && (
-            <button className="btn btn-secondary" onClick={() => setMethod(null)} disabled={loading}>
-              Back
-            </button>
-          )}
-          {method === null && (
-            <button className="btn btn-secondary" onClick={onClose}>
-              Close
-            </button>
-          )}
-          {generatedInvoice && (
-            <button className="btn btn-secondary" onClick={onClose}>
-              Done
-            </button>
-          )}
         </div>
       </div>
     </div>

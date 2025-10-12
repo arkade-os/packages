@@ -1,372 +1,379 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { Wallet } from '@arkade-os/sdk';
+import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
+import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
 const SNAP_ID = 'local:http://localhost:8080';
 
+// Network configuration
+const ARK_SERVER_URL = 'https://signet.arkade.sh';
+const ESPLORA_URL = 'https://mempool.space/signet/api';
+const BOLTZ_URL = 'https://api.boltz.exchange';
+
+interface WalletInfo {
+  arkAddress: string;
+  boardingAddress: string;
+  taprootAddress: string;
+  network: string;
+}
+
+interface Balance {
+  total: number;
+  onchain: number;
+  offchain: number;
+  settled: number;
+  preconfirmed: number;
+  recoverable: number;
+  vtxoList: Array<{
+    id: string;
+    amount: number;
+    expiry: number;
+    status: string;
+  }>;
+}
+
+interface Transaction {
+  txid: string;
+  amount: number;
+  type: 'send' | 'receive';
+  timestamp: number;
+  layer: 'onchain' | 'offchain';
+  status?: string;
+}
+
 interface MetaMaskContextType {
-  isFlask: boolean;
-  isSnapInstalled: boolean;
   isConnected: boolean;
-  walletInfo: any | null;
-  balance: any | null;
-  transactions: any[];
+  walletInfo: WalletInfo | null;
+  balance: Balance | null;
+  transactions: Transaction[];
   loading: boolean;
-  error: string | null;
   connectSnap: () => Promise<void>;
-  getWallet: () => Promise<void>;
-  createWallet: (network?: string) => Promise<void>;
+  sendBitcoin: (to: string, amount: number) => Promise<string>;
   getBalance: () => Promise<void>;
-  sendBitcoin: (to: string, amount: number) => Promise<void>;
   getTransactionHistory: () => Promise<void>;
-  payLightningInvoice: (invoice: string) => Promise<void>;
+  payLightningInvoice: (invoice: string, maxFeeSats?: number) => Promise<any>;
   createLightningInvoice: (amount: number, description?: string) => Promise<any>;
   resetWallet: () => Promise<void>;
-  startMonitoring: () => Promise<void>;
 }
 
-const MetaMaskContext = createContext<MetaMaskContextType | undefined>(undefined);
+const MetaMaskContext = createContext<MetaMaskContextType | null>(null);
 
-export const useMetaMask = () => {
-  const context = useContext(MetaMaskContext);
-  if (!context) {
-    throw new Error('useMetaMask must be used within MetaMaskProvider');
-  }
-  return context;
-};
-
-interface MetaMaskProviderProps {
-  children: ReactNode;
-}
-
-export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) => {
-  const [isFlask, setIsFlask] = useState(false);
-  const [isSnapInstalled, setIsSnapInstalled] = useState(false);
+export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [walletInfo, setWalletInfo] = useState<any | null>(null);
-  const [balance, setBalance] = useState<any | null>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkFlask();
-    checkSnapInstalled();
-  }, []);
+  // Store wallet and lightning instances
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [lightning, setLightning] = useState<ArkadeLightning | null>(null);
 
-  // Auto-connect if snap is installed
-  useEffect(() => {
-    const autoConnect = async () => {
-      if (isSnapInstalled && !isConnected && !walletInfo) {
-        try {
-          // Just check wallet status without connecting
-          await getWallet();
-        } catch (err) {
-          console.log('Auto-connect skipped:', err);
-        }
-      }
-    };
-
-    autoConnect();
-  }, [isSnapInstalled]);
-
-  const checkFlask = async () => {
-    const provider = (window as any).ethereum;
-    if (!provider) {
-      setError('MetaMask is not installed');
-      return;
-    }
-
-    try {
-      const clientVersion = await provider.request({
-        method: 'web3_clientVersion',
-      });
-
-      setIsFlask(clientVersion.includes('flask'));
-    } catch (err) {
-      console.error('Error checking Flask:', err);
-    }
-  };
-
-  const checkSnapInstalled = async () => {
-    try {
-      const provider = (window as any).ethereum;
-      if (!provider) return;
-
-      const snaps = await provider.request({
-        method: 'wallet_getSnaps',
-      });
-
-      setIsSnapInstalled(!!snaps[SNAP_ID]);
-    } catch (err) {
-      console.error('Error checking snap:', err);
-    }
-  };
-
-  const connectSnap = async () => {
+  /**
+   * Connect to MetaMask Snap and initialize Arkade Wallet
+   */
+  const connectSnap = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
-      const provider = (window as any).ethereum;
-      if (!provider) {
-        throw new Error('MetaMask is not installed');
+      if (!window.ethereum) {
+        throw new Error('MetaMask not found. Please install MetaMask extension.');
       }
 
-      // Check if snap is already installed first
-      const snaps = await provider.request({
+      // Check if snap is installed
+      const installedSnaps = await window.ethereum.request({
         method: 'wallet_getSnaps',
       });
 
-      if (snaps[SNAP_ID]) {
-        // Snap already installed, just get wallet info
-        setIsSnapInstalled(true);
-        setIsConnected(true);
-        await getWallet();
-      } else {
-        // Install snap
-        await provider.request({
+      const isSnapInstalled = installedSnaps && installedSnaps[SNAP_ID];
+
+      if (!isSnapInstalled) {
+        // Request snap installation
+        await window.ethereum.request({
           method: 'wallet_requestSnaps',
           params: {
-            [SNAP_ID]: {},
+            [SNAP_ID]: { version: '^1.0.0' },
           },
         });
-
-        setIsSnapInstalled(true);
-        setIsConnected(true);
-
-        // Check if wallet already exists
-        await getWallet();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect snap');
-      console.error('Error connecting snap:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const invokeSnap = async (method: string, params?: any) => {
-    const provider = (window as any).ethereum;
-    if (!provider) {
-      throw new Error('MetaMask is not installed');
-    }
+      // Wait a bit for snap to be ready
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const response = await provider.request({
-      method: 'wallet_invokeSnap',
-      params: {
-        snapId: SNAP_ID,
-        request: {
-          method,
-          params,
+      // Get accounts from snap
+      const accountResponse = await window.ethereum.request({
+        method: 'wallet_invokeSnap',
+        params: {
+          snapId: SNAP_ID,
+          request: { method: 'bitcoin_getAccounts' },
         },
-      },
-    });
+      });
 
-    return response;
-  };
-
-  const getWallet = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await invokeSnap('arkade_getWallet');
-
-      if (response.success && response.data) {
-        setWalletInfo(response.data);
-        setIsConnected(true);
-        // Also fetch balance if wallet exists
-        await getBalance();
-        // Start real-time monitoring for incoming funds
-        await startMonitoring();
-      } else {
-        setWalletInfo(null);
-        // If no wallet but snap is connected, we're in the "create wallet" state
-        setIsConnected(true);
+      if (!accountResponse || !accountResponse.accounts || accountResponse.accounts.length === 0) {
+        throw new Error('No accounts found in snap');
       }
-    } catch (err: any) {
-      // Don't show error for "no wallet found" - this is expected
-      if (!err.message || !err.message.includes('No wallet found')) {
-        setError(err.message || 'Failed to get wallet');
-        console.error('Error getting wallet:', err);
-      }
-      setWalletInfo(null);
+
+      const account = accountResponse.accounts[0];
+      const taprootAddress = account.address;
+      const publicKey = account.publicKey;
+
+      // Create MetaMaskSnapIdentity
+      const identity = new MetaMaskSnapIdentity(
+        publicKey,
+        taprootAddress,
+        window.ethereum
+      );
+
+      // Create Arkade Wallet
+      const arkWallet = await Wallet.create({
+        identity,
+        arkServerUrl: ARK_SERVER_URL,
+        esploraUrl: ESPLORA_URL,
+      });
+
+      // Get Ark addresses
+      const arkAddress = await arkWallet.getAddress();
+      const boardingAddress = await arkWallet.getBoardingAddress();
+
+      // Initialize Lightning
+      const swapProvider = new BoltzSwapProvider({
+        apiUrl: BOLTZ_URL,
+        network: 'signet' as any,
+      });
+
+      const arkLightning = new ArkadeLightning({
+        wallet: arkWallet as any, // Type mismatch between SDK versions
+        swapProvider,
+      });
+
+      // Store instances
+      setWallet(arkWallet);
+      setLightning(arkLightning);
+
+      // Set wallet info
+      setWalletInfo({
+        arkAddress,
+        boardingAddress,
+        taprootAddress,
+        network: 'signet',
+      });
+
+      setIsConnected(true);
+
+      console.log('Wallet connected successfully!', {
+        arkAddress,
+        boardingAddress,
+        taprootAddress,
+      });
+    } catch (error: any) {
+      console.error('Connection failed:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createWallet = async (network: string = 'testnet') => {
+  /**
+   * Get wallet balance
+   */
+  const getBalance = useCallback(async () => {
+    if (!wallet) return;
+
     try {
-      setLoading(true);
-      setError(null);
+      const bal = await wallet.getBalance();
+      const vtxos = await wallet.getVtxos();
 
-      const response = await invokeSnap('arkade_createWallet', { network });
+      const vtxoList = vtxos.map((vtxo: any) => ({
+        id: vtxo.id || vtxo.txid || `${vtxo.txid}:${vtxo.vout}`,
+        amount: Number(vtxo.amount || vtxo.value || 0),
+        expiry: vtxo.expiry || 0,
+        status: vtxo.pending ? 'pending' : vtxo.settled ? 'settled' : 'preconfirmed',
+      }));
 
-      if (response.success) {
-        setWalletInfo(response.data);
-        await getBalance();
-        // Start real-time monitoring for the new wallet
-        await startMonitoring();
-      } else {
-        throw new Error(response.message || 'Failed to create wallet');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to create wallet');
-      console.error('Error creating wallet:', err);
-      throw err;
-    } finally {
-      setLoading(false);
+      setBalance({
+        total: Number(bal.total),
+        onchain: Number(bal.boarding.total),
+        offchain: Number(bal.available),
+        settled: Number(bal.settled || 0n),
+        preconfirmed: Number(bal.preconfirmed || 0n),
+        recoverable: Number(bal.recoverable || 0n),
+        vtxoList,
+      });
+    } catch (error) {
+      console.error('Failed to get balance:', error);
     }
-  };
+  }, [wallet]);
 
-  const getBalance = async () => {
+  /**
+   * Get transaction history
+   */
+  const getTransactionHistory = useCallback(async () => {
+    if (!wallet) return;
+
     try {
-      const response = await invokeSnap('arkade_getBalance');
+      const history = await wallet.getTransactionHistory();
 
-      if (response.success) {
-        setBalance(response.data);
-      }
-    } catch (err: any) {
-      console.error('Error getting balance:', err);
+      // Transform to our format
+      const txs: Transaction[] = history.map((tx: any) => {
+        const txid = tx.key?.arkTxid || tx.key?.commitmentTxid || tx.key?.boardingTxid || 'unknown';
+        const type = tx.type === 'SEND' || tx.type === 1 ? 'send' : 'receive';
+        const hasArkTxid = tx.key?.arkTxid && tx.key.arkTxid !== 'unknown';
+        const hasBoardingTxid = tx.key?.boardingTxid && tx.key.boardingTxid !== 'unknown';
+        const layer = hasArkTxid ? 'offchain' : hasBoardingTxid ? 'onchain' : 'offchain';
+        const amount = typeof tx.amount === 'bigint' ? Number(tx.amount) : Number(tx.amount || 0);
+        const timestamp = typeof tx.createdAt === 'bigint' ? Number(tx.createdAt) : tx.createdAt || Date.now();
+        const status = tx.settled ? 'settled' : 'preconfirmed';
+
+        return {
+          txid,
+          amount,
+          type,
+          timestamp,
+          layer,
+          status,
+        };
+      });
+
+      setTransactions(txs);
+    } catch (error) {
+      console.error('Failed to get transaction history:', error);
+      setTransactions([]);
     }
-  };
+  }, [wallet]);
 
-  const sendBitcoin = async (to: string, amount: number) => {
-    try {
-      setLoading(true);
-      setError(null);
+  /**
+   * Send Bitcoin
+   */
+  const sendBitcoin = useCallback(
+    async (to: string, amount: number): Promise<string> => {
+      if (!wallet) {
+        throw new Error('Wallet not connected');
+      }
 
-      const response = await invokeSnap('arkade_send', { to, amount });
+      try {
+        setLoading(true);
+        const txId = await wallet.sendBitcoin({
+          address: to,
+          amount: amount,
+        });
 
-      if (response.success) {
+        // Refresh balance and history
         await getBalance();
         await getTransactionHistory();
-      } else {
-        throw new Error(response.message || 'Failed to send transaction');
+
+        return txId;
+      } catch (error: any) {
+        console.error('Send failed:', error);
+        throw error;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to send transaction');
-      console.error('Error sending transaction:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [wallet, getBalance, getTransactionHistory]
+  );
 
-  const getTransactionHistory = async () => {
-    try {
-      const response = await invokeSnap('arkade_getTransactionHistory');
-
-      if (response.success) {
-        setTransactions(response.data);
+  /**
+   * Pay Lightning invoice
+   */
+  const payLightningInvoice = useCallback(
+    async (invoice: string, maxFeeSats?: number) => {
+      if (!lightning) {
+        throw new Error('Lightning not initialized');
       }
-    } catch (err: any) {
-      console.error('Error getting transaction history:', err);
-    }
-  };
 
-  const payLightningInvoice = async (invoice: string) => {
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        const result = await lightning.sendLightningPayment({ invoice, maxFeeSats });
 
-      const response = await invokeSnap('arkade_payLightningInvoice', { invoice });
-
-      if (response.success) {
+        // Refresh balance and history
         await getBalance();
         await getTransactionHistory();
-      } else {
-        throw new Error(response.message || 'Failed to pay invoice');
+
+        return result;
+      } catch (error: any) {
+        console.error('Lightning payment failed:', error);
+        throw error;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to pay invoice');
-      console.error('Error paying invoice:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [lightning, getBalance, getTransactionHistory]
+  );
 
-  const createLightningInvoice = async (amount: number, description?: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await invokeSnap('arkade_createLightningInvoice', { amount, description });
-
-      if (response.success) {
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Failed to create invoice');
+  /**
+   * Create Lightning invoice
+   */
+  const createLightningInvoice = useCallback(
+    async (amount: number, description?: string) => {
+      if (!lightning) {
+        throw new Error('Lightning not initialized');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to create invoice');
-      console.error('Error creating invoice:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const resetWallet = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        const result = await lightning.createLightningInvoice({
+          amount,
+          description: description || 'Arkade wallet payment',
+        });
 
-      const response = await invokeSnap('arkade_resetWallet');
+        // Start monitoring for payment
+        lightning.waitAndClaim(result.pendingSwap).then(() => {
+          console.log('Lightning payment received and claimed');
+          getBalance();
+          getTransactionHistory();
+        }).catch((error) => {
+          console.error('Failed to claim Lightning payment:', error);
+        });
 
-      if (response.success) {
-        setWalletInfo(null);
-        setBalance(null);
-        setTransactions([]);
-      } else {
-        throw new Error(response.message || 'Failed to reset wallet');
+        return result;
+      } catch (error: any) {
+        console.error('Failed to create Lightning invoice:', error);
+        throw error;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset wallet');
-      console.error('Error resetting wallet:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [lightning, getBalance, getTransactionHistory]
+  );
 
-  const startMonitoring = async () => {
-    try {
-      console.log('Starting real-time monitoring...');
-      const response = await invokeSnap('arkade_startMonitoring');
+  /**
+   * Reset wallet (for testing purposes)
+   */
+  const resetWallet = useCallback(async () => {
+    setWallet(null);
+    setLightning(null);
+    setWalletInfo(null);
+    setBalance(null);
+    setTransactions([]);
+    setIsConnected(false);
+  }, []);
 
-      if (response.success) {
-        console.log('Real-time monitoring started successfully');
-      } else {
-        console.warn('Failed to start monitoring:', response.message);
-      }
-    } catch (err: any) {
-      console.error('Error starting monitoring:', err);
-      // Don't throw - monitoring is optional, app should work without it
-    }
-  };
+  return (
+    <MetaMaskContext.Provider
+      value={{
+        isConnected,
+        walletInfo,
+        balance,
+        transactions,
+        loading,
+        connectSnap,
+        sendBitcoin,
+        getBalance,
+        getTransactionHistory,
+        payLightningInvoice,
+        createLightningInvoice,
+        resetWallet,
+      }}
+    >
+      {children}
+    </MetaMaskContext.Provider>
+  );
+};
 
-  const value: MetaMaskContextType = {
-    isFlask,
-    isSnapInstalled,
-    isConnected,
-    walletInfo,
-    balance,
-    transactions,
-    loading,
-    error,
-    connectSnap,
-    getWallet,
-    createWallet,
-    getBalance,
-    sendBitcoin,
-    getTransactionHistory,
-    payLightningInvoice,
-    createLightningInvoice,
-    resetWallet,
-    startMonitoring,
-  };
-
-  return <MetaMaskContext.Provider value={value}>{children}</MetaMaskContext.Provider>;
+export const useMetaMask = (): MetaMaskContextType => {
+  const context = useContext(MetaMaskContext);
+  if (!context) {
+    throw new Error('useMetaMask must be used within a MetaMaskProvider');
+  }
+  return context;
 };

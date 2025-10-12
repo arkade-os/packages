@@ -1,6 +1,6 @@
 {
   "name": "arkade-snap",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Arkade Wallet Snap - Bitcoin Layer 2 wallet with Ark protocol support",
   "main": "./dist/bundle.js",
   "repository": {
@@ -10,11 +10,14 @@
   "license": "MIT",
   "scripts": {
     "build": "mm-snap build",
-    "build:clean": "yarn clean && yarn build",
+    "build:clean": "pnpm clean && pnpm build",
+    "rebuild": "pnpm clean && pnpm build && pnpm serve",
     "clean": "rimraf dist",
-    "lint": "yarn lint:eslint && yarn lint:misc --check",
+    "delete": "pnpm clean",
+    "stop": "lsof -ti:8080 | xargs kill -9 || echo 'No snap server running on port 8080'",
+    "lint": "pnpm lint:eslint && pnpm lint:misc --check",
     "lint:eslint": "eslint . --cache --ext js,ts",
-    "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write",
+    "lint:fix": "pnpm lint:eslint --fix && pnpm lint:misc --write",
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' --ignore-path .gitignore",
     "serve": "mm-snap serve",
     "start": "mm-snap watch",
@@ -23,7 +26,10 @@
   "dependencies": {
     "@arkade-os/boltz-swap": "0.2.1-alpha.3",
     "@arkade-os/sdk": "0.3.1-alpha.3",
-    "@metamask/snaps-sdk": "^6.0.0"
+    "@metamask/snaps-sdk": "^6.0.0",
+    "@noble/curves": "^2.0.1",
+    "@scure/base": "^2.0.0",
+    "@scure/btc-signer": "^2.0.1"
   },
   "devDependencies": {
     "@jest/globals": "^29.5.0",

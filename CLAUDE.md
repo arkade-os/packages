@@ -68,11 +68,17 @@ cd packages/snap
 # Serve the built snap (without watch mode)
 pnpm serve
 
+# Stop the snap server (kills process on port 8080)
+pnpm stop
+
 # Clean build artifacts
 pnpm clean
 
-# Rebuild from scratch
-pnpm build:clean
+# Delete build artifacts (alias for clean)
+pnpm delete
+
+# Rebuild from scratch (clean + build + serve)
+pnpm rebuild
 ```
 
 ### Site-Specific Commands
@@ -88,72 +94,112 @@ pnpm preview
 
 ## Architecture
 
+### Overview - Simplified Provider Pattern
+
+This snap uses a **minimal signing service** approach where the Snap only handles Bitcoin key management and signing, while all wallet logic (balance, transactions, Lightning) runs in the frontend using the Arkade SDK.
+
+```
+┌─────────────────────────────────────────┐
+│  Frontend (Dapp)                        │
+│  ┌────────────────────────────────┐    │
+│  │ Arkade SDK Wallet              │    │
+│  │  + MetaMaskSnapIdentity        │    │
+│  │  - Balance queries             │    │
+│  │  - Transaction history         │    │
+│  │  - Lightning operations        │    │
+│  │  - VTXO management             │    │
+│  └──────────┬─────────────────────┘    │
+│             │                            │
+│             │ (signing requests only)    │
+│             ▼                            │
+│  ┌────────────────────────────────┐    │
+│  │ MetaMask Snap (~97 lines)      │    │
+│  │  - bitcoin_getAccounts()       │    │
+│  │  - bitcoin_signPsbt()          │    │
+│  └────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
+
+**Benefits:**
+- ✅ **Simpler** - Snap reduced from ~600 to ~97 lines
+- ✅ **Faster** - No RPC overhead for data queries
+- ✅ **More secure** - Minimal attack surface
+- ✅ **More flexible** - Update wallet logic without snap rebuild
+
 ### Monorepo Structure
 ```
 packages/
-├── snap/          # MetaMask Snap (backend)
+├── snap/          # MetaMask Snap (Minimal signing service)
 │   ├── src/
-│   │   ├── index.ts      # RPC request handlers (entry point)
-│   │   └── wallet.ts     # Arkade SDK integration & wallet logic
+│   │   ├── index.ts      # RPC handlers (only 2 methods!)
+│   │   └── wallet.ts     # Bitcoin key derivation & PSBT signing
 │   └── snap.manifest.json
-└── site/          # React frontend (dapp)
+└── site/          # React frontend (Runs Arkade SDK)
     └── src/
         ├── components/
-        │   └── MetaMaskProvider.tsx  # React Context for snap communication
+        │   └── MetaMaskProvider.tsx  # Manages Arkade Wallet instance
+        ├── utils/
+        │   └── MetaMaskSnapIdentity.ts  # Identity provider for Arkade SDK
         └── App.tsx
 ```
 
 ### Snap Architecture (packages/snap)
 
-**Entry Point: [index.ts](packages/snap/src/index.ts)**
-- Exports `onRpcRequest` handler that processes all snap RPC calls
-- Routes requests to appropriate handlers
-- Shows MetaMask dialogs for user confirmation and displaying results
-- All handlers follow pattern: validate → confirm with user → execute → show result
+**Entry Point: [index.ts](packages/snap/src/index.ts:1-27)**
+- Exports `onRpcRequest` handler with only **2 RPC methods**:
+  - `bitcoin_getAccounts` - Get Bitcoin taproot address and public keys
+  - `bitcoin_signPsbt` - Sign a PSBT with the snap's key
+- No dialogs, no state management, just pure signing functionality
 
-**Core Wallet Logic: [wallet.ts](packages/snap/src/wallet.ts)**
-- Manages private key storage via MetaMask's `snap_manageState` API
-- Initializes Arkade SDK `Wallet` instances from stored keys
-- Implements all Bitcoin/Lightning operations:
-  - `createWallet()` - Generates new key using `SingleKey.fromRandomBytes()`
-  - `getBalance()` - Returns both on-chain UTXOs and off-chain VTXOs
-  - `sendBitcoin()` - Sends via Ark protocol (instant VTXOs)
-  - `getTransactionHistory()` - Fetches history from Arkade SDK
-  - `payLightningInvoice()` - Submarine swap (Ark VTXO → Lightning)
-  - `createLightningInvoice()` - Reverse swap (Lightning → Ark VTXO)
-- Uses `ArkadeLightning` class from `@arkade-os/boltz-swap` for Lightning operations
-- Configures network endpoints in `ARKADE_CONFIG` object (testnet, mutinynet, bitcoin, regtest)
-
-**State Management:**
-- Private keys stored in encrypted MetaMask state (never exposed to dapp)
-- Wallet data (addresses, created timestamp) stored separately
-- Network configuration persisted per wallet
+**Bitcoin Signing: [wallet.ts](packages/snap/src/wallet.ts:1-97)**
+- `getBitcoinAccounts()` - Derives Bitcoin keys from MetaMask's entropy
+  - Uses `snap_getEntropy` with salt `'bitcoin-arkade-snap'` for deterministic key derivation
+  - Returns taproot address, full public key, and x-only public key
+- `signPsbt()` - Signs PSBTs using the derived key
+  - Accepts base64-encoded PSBT and input indexes to sign
+  - Returns signed PSBT
 
 **Permission Requirements (snap.manifest.json):**
-- `snap_dialog` - Show confirmation/alert dialogs
-- `snap_manageState` - Store encrypted wallet data
+- `snap_getEntropy` - Derive deterministic Bitcoin keys
 - `endowment:rpc` - Accept RPC calls from dapps
-- `endowment:network-access` - Connect to Arkade servers and Esplora
+- `endowment:network-access` - (Not needed in minimal snap, but kept for future use)
+
+**No State Storage:**
+- Snap is completely stateless
+- Keys derived on-demand from MetaMask entropy
+- No `snap_manageState` or `snap_dialog` permissions needed
 
 ### Frontend Architecture (packages/site)
 
 **Communication Pattern:**
 1. React components use `useMetaMask()` hook
-2. Hook methods call `invokeSnap()` helper
-3. Helper uses `window.ethereum.request()` with `wallet_invokeSnap`
-4. Request routed to snap's `onRpcRequest` handler
-5. Response returned to frontend via Promise
+2. Hook manages **Arkade Wallet instance** that runs in the browser
+3. Wallet uses **MetaMaskSnapIdentity** provider for signing
+4. Identity provider calls snap only when signatures are needed
+5. All balance/transaction queries happen client-side via Arkade SDK
 
-**MetaMaskProvider Context ([MetaMaskProvider.tsx](packages/site/src/components/MetaMaskProvider.tsx)):**
-- Manages snap connection state
-- Provides methods that map 1:1 to snap RPC methods
-- Handles loading states and errors
-- Auto-connects if snap is installed
-- Local snap ID: `local:http://localhost:8080`
+**MetaMaskProvider Context ([MetaMaskProvider.tsx](packages/site/src/components/MetaMaskProvider.tsx:1-380)):**
+- Creates and manages `Wallet` instance from `@arkade-os/sdk`
+- Creates `MetaMaskSnapIdentity` provider that implements signing interface
+- Provides React hooks for wallet operations:
+  - `connectSnap()` - Install snap + create Arkade wallet
+  - `getBalance()` - Query balance from Arkade SDK
+  - `sendBitcoin()` - Send via Arkade SDK (triggers snap signing)
+  - `getTransactionHistory()` - Fetch from Arkade SDK
+  - `payLightningInvoice()` - Pay via ArkadeLightning
+  - `createLightningInvoice()` - Receive via ArkadeLightning
+
+**MetaMaskSnapIdentity Provider ([MetaMaskSnapIdentity.ts](packages/site/src/utils/MetaMaskSnapIdentity.ts:1-169)):**
+- Implements Arkade SDK's `Identity` interface
+- Translates Arkade SDK signing requests to snap RPC calls
+- Handles PSBT encoding/decoding (Transaction ↔ base64)
+- Manages connection state and reconnection logic
 
 **State Flow:**
 ```
-User Action → Component → useMetaMask() → invokeSnap() → MetaMask → Snap → Arkade SDK → Bitcoin Network
+User Action → Component → useMetaMask() → Arkade Wallet → MetaMaskSnapIdentity → Snap (signing only)
+                                        ↓
+                                   Arkade Server / Esplora
 ```
 
 ## Arkade SDK Integration
@@ -190,29 +236,66 @@ Uses Boltz swap protocol:
 
 ## RPC Methods
 
-All snap methods are prefixed with `arkade_` and follow the pattern:
+The snap exposes only **2 minimal RPC methods** for Bitcoin signing:
+
+### `bitcoin_getAccounts`
+
+Get Bitcoin account information (address and public keys).
+
 ```typescript
-await ethereum.request({
+const response = await ethereum.request({
   method: 'wallet_invokeSnap',
   params: {
     snapId: 'local:http://localhost:8080',
-    request: { method: 'arkade_methodName', params: {...} }
+    request: { method: 'bitcoin_getAccounts' }
   }
 });
+
+// Returns:
+// {
+//   accounts: [{
+//     address: "tb1p...",        // Bitcoin taproot address
+//     publicKey: "02...",          // Full public key (33 bytes hex)
+//     xOnlyPublicKey: "..."        // x-only public key (32 bytes hex)
+//   }]
+// }
 ```
 
-**Available Methods:**
-- `arkade_getWallet` - Get wallet addresses and network
-- `arkade_createWallet` - Create new wallet (params: `{network}`)
-- `arkade_importWallet` - Import wallet (NOT YET IMPLEMENTED)
-- `arkade_getBalance` - Get on-chain and off-chain balances + VTXO list
-- `arkade_send` - Send Bitcoin (params: `{to, amount, asset}`)
-- `arkade_getTransactionHistory` - Fetch transaction history
-- `arkade_payLightningInvoice` - Pay Lightning invoice (params: `{invoice, maxFeeSats}`)
-- `arkade_createLightningInvoice` - Create invoice to receive (params: `{amount, description}`)
-- `arkade_resetWallet` - Delete all wallet data
+### `bitcoin_signPsbt`
 
-All methods return: `{success: boolean, data?: any, message?: string}`
+Sign a Partially Signed Bitcoin Transaction (PSBT).
+
+```typescript
+const response = await ethereum.request({
+  method: 'wallet_invokeSnap',
+  params: {
+    snapId: 'local:http://localhost:8080',
+    request: {
+      method: 'bitcoin_signPsbt',
+      params: {
+        psbt: 'cHNidP8B...', // Base64-encoded PSBT
+        inputIndexes: [0, 1]  // Indexes of inputs to sign
+      }
+    }
+  }
+});
+
+// Returns:
+// {
+//   psbt: 'cHNidP8B...'  // Base64-encoded signed PSBT
+// }
+```
+
+### Why Only 2 Methods?
+
+All wallet operations (balance, transactions, Lightning) are handled by the **Arkade SDK running in the frontend** with a `MetaMaskSnapIdentity` provider. The snap is only called for signing operations.
+
+**This approach provides:**
+- ✅ Smaller snap codebase (~97 lines vs ~600 lines)
+- ✅ Faster development (no snap rebuild for wallet logic changes)
+- ✅ Better UX (no RPC overhead for data queries)
+- ✅ More secure (minimal attack surface)
+- ✅ More flexible (update Arkade SDK version without snap changes)
 
 ## Testing Requirements
 
@@ -223,19 +306,30 @@ All methods return: `{success: boolean, data?: any, message?: string}`
 
 **Test Flow:**
 1. Build snap: `cd packages/snap && pnpm build`
-2. Start development: `pnpm start` (from root)
-3. Open http://localhost:8000
-4. Click "Connect Snap" - approves snap installation
-5. Create wallet - choose network (testnet recommended)
-6. Fund wallet via boarding address (on-chain deposit)
-7. Wait for confirmation, funds appear as VTXOs
-8. Test send/receive and Lightning operations
+2. Start development servers: `pnpm start` (from root)
+   - Snap serves at http://localhost:8080
+   - Site serves at http://localhost:8000
+3. Open http://localhost:8000 in browser
+4. Click "Connect Snap" - installs snap + creates Arkade wallet
+5. Fund wallet via boarding address (on-chain deposit to Signet testnet)
+6. Wait for confirmation, funds appear as VTXOs in balance
+7. Test send/receive and Lightning operations
 
 **Important Testing Notes:**
+- Uses **Signet testnet** by default (configured in MetaMaskProvider.tsx)
 - First deposit requires on-chain confirmation (boarding)
-- Subsequent transfers use VTXOs (instant)
-- Lightning requires funded wallet with VTXOs
-- Network must have Boltz swap provider for Lightning (check `ARKADE_CONFIG`)
+- Subsequent transfers use VTXOs (instant off-chain)
+- Lightning integration via Boltz (Signet: https://api.boltz.exchange)
+- Get testnet coins from [Signet Faucet](https://signetfaucet.com/)
+
+**To Stop Servers:**
+```bash
+# Stop snap server
+cd packages/snap && pnpm stop
+
+# Or kill all on port 8080
+lsof -ti:8080 | xargs kill -9
+```
 
 ## Common Development Patterns
 

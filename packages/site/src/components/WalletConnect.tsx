@@ -5,160 +5,107 @@ import './WalletConnect.css';
 
 export const WalletConnect: React.FC = () => {
   const {
-    isFlask,
-    isSnapInstalled,
     isConnected,
     walletInfo,
     loading,
-    error,
     connectSnap,
-    createWallet,
     resetWallet,
-    getWallet,
+    getBalance,
+    getTransactionHistory,
   } = useMetaMask();
 
-  const [showResetOption, setShowResetOption] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check if error is about wallet already existing
+  // Auto-load data when wallet is connected
   useEffect(() => {
-    if (error && error.includes('already exists')) {
-      setShowResetOption(true);
+    if (isConnected && walletInfo) {
+      getBalance();
+      getTransactionHistory();
     }
-  }, [error]);
+  }, [isConnected, walletInfo, getBalance, getTransactionHistory]);
 
-  const handleCreateWallet = async (network: string) => {
+  const handleConnect = async () => {
     try {
-      await createWallet(network);
-      setShowResetOption(false);
+      setError(null);
+      await connectSnap();
     } catch (err: any) {
-      if (err.message && err.message.includes('already exists')) {
-        setShowResetOption(true);
+      console.error('Connection error:', err);
+      setError(err.message || 'Failed to connect snap');
+    }
+  };
+
+  const handleReset = async () => {
+    if (window.confirm('⚠️ WARNING: This will reset your wallet connection.\n\nAre you sure?')) {
+      try {
+        await resetWallet();
+        setError(null);
+      } catch (err: any) {
+        console.error('Reset error:', err);
+        setError(err.message || 'Failed to reset wallet');
       }
     }
   };
 
-  const handleResetWallet = async () => {
-    try {
-      await resetWallet();
-      setShowResetOption(false);
-      // After reset, try to get wallet again to refresh state
-      await getWallet();
-    } catch (err) {
-      console.error('Error resetting wallet:', err);
-    }
-  };
-
-  if (!isFlask && !loading) {
-    return (
-      <div className="connect-container animate-fade-in">
-        <div className="connect-card">
-          <div className="icon-wrapper">
-            <span className="icon">🦊</span>
-          </div>
-          <h2 className="connect-title">MetaMask Flask Required</h2>
-          <p className="connect-description">
-            To use Arkade Wallet, you need to install MetaMask Flask - a developer-friendly version
-            of MetaMask that supports Snaps.
-          </p>
-          <a
-            href="https://metamask.io/flask/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary"
-          >
-            Install MetaMask Flask
-          </a>
-        </div>
-      </div>
-    );
+  // Show wallet dashboard if connected
+  if (isConnected && walletInfo) {
+    return <Dashboard />;
   }
 
-  if (!isConnected && !walletInfo) {
-    return (
-      <div className="connect-container animate-fade-in">
-        <div className="connect-card">
-          <div className="icon-wrapper">
-            <span className="icon">🔷</span>
-          </div>
-          <h1 className="connect-title gradient-text">Welcome to Arkade Wallet</h1>
-          <p className="connect-description">
-            Bitcoin Layer 2 wallet with Lightning Network and Tether support. Experience instant
-            off-chain transactions with the Ark protocol.
-          </p>
-          <div className="features">
-            <div className="feature">
-              <span className="feature-icon">⚡</span>
-              <span className="feature-text">Instant Transfers</span>
-            </div>
-            <div className="feature">
-              <span className="feature-icon">🔒</span>
-              <span className="feature-text">Self-Custodial</span>
-            </div>
-            <div className="feature">
-              <span className="feature-icon">💰</span>
-              <span className="feature-text">Low Fees</span>
-            </div>
-          </div>
-          <button
-            onClick={connectSnap}
-            disabled={loading}
-            className="btn btn-primary btn-lg"
-          >
-            {loading ? 'Connecting...' : 'Connect Snap'}
-          </button>
-          {error && <p className="error-message">{error}</p>}
+  // Show connection screen
+  return (
+    <div className="connect-container animate-fade-in">
+      <div className="connect-card">
+        <div className="icon-wrapper">
+          <span className="icon">🔷</span>
         </div>
-      </div>
-    );
-  }
-
-  if (isConnected && !walletInfo) {
-    return (
-      <div className="connect-container animate-fade-in">
-        <div className="connect-card">
-          <div className="icon-wrapper">
-            <span className="icon">👛</span>
+        <h1 className="connect-title gradient-text">Welcome to Arkade Wallet</h1>
+        <p className="connect-description">
+          Bitcoin Layer 2 wallet with Lightning Network support. Experience instant
+          off-chain transactions with the Ark protocol on Signet testnet.
+        </p>
+        <div className="features">
+          <div className="feature">
+            <span className="feature-icon">⚡</span>
+            <span className="feature-text">Instant VTXOs</span>
           </div>
-          <h2 className="connect-title">Create Your Wallet</h2>
-          <p className="connect-description">
-            No wallet found. Let's create a new Arkade wallet to get started with Bitcoin Layer 2.
-          </p>
-          <div className="network-selector">
-            <button
-              onClick={() => handleCreateWallet('testnet')}
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              {loading ? 'Creating...' : 'Create Testnet Wallet'}
-            </button>
-            <button
-              onClick={() => handleCreateWallet('bitcoin')}
-              disabled={loading}
-              className="btn btn-secondary"
-            >
-              Create Bitcoin Wallet
-            </button>
+          <div className="feature">
+            <span className="feature-icon">🔒</span>
+            <span className="feature-text">Self-Custodial</span>
           </div>
-          {error && !showResetOption && <p className="error-message">{error}</p>}
-          {showResetOption && (
-            <div style={{ marginTop: '20px', padding: '15px', background: '#fff3cd', borderRadius: '8px' }}>
-              <p style={{ margin: '0 0 10px 0', color: '#856404' }}>
-                ⚠️ A wallet already exists. You can reset it to create a new one.
-              </p>
-              <button
-                onClick={handleResetWallet}
-                disabled={loading}
+          <div className="feature">
+            <span className="feature-icon">💰</span>
+            <span className="feature-text">Lightning Ready</span>
+          </div>
+        </div>
+        <button
+          onClick={handleConnect}
+          disabled={loading}
+          className="btn btn-primary btn-lg"
+        >
+          {loading ? 'Connecting...' : 'Connect Snap'}
+        </button>
+        {error && (
+          <div className="error-container">
+            <p className="error-message">{error}</p>
+            {error.includes('MetaMask') && (
+              <a
+                href="https://metamask.io/flask/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-secondary"
-                style={{ width: '100%', background: '#dc3545' }}
+                style={{ marginTop: '10px' }}
               >
-                {loading ? 'Resetting...' : 'Reset Wallet'}
-              </button>
-            </div>
-          )}
+                Install MetaMask Flask
+              </a>
+            )}
+          </div>
+        )}
+        <div className="info-box">
+          <p className="info-text">
+            ℹ️ This wallet uses <strong>Signet testnet</strong> for testing. You'll need MetaMask Flask installed.
+          </p>
         </div>
       </div>
-    );
-  }
-
-  return <Dashboard />;
+    </div>
+  );
 };

@@ -57,13 +57,14 @@
 
 .balance-amount {
   font-size: 3rem;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 1.5rem;
   color: var(--white);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   background: none;
   -webkit-background-clip: unset;
   -webkit-text-fill-color: unset;
+  letter-spacing: -0.02em;
 }
 
 .balance-breakdown {

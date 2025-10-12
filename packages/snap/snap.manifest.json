@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Arkade Wallet Snap - Bitcoin Layer 2 wallet with Lightning and Tether support",
   "proposedName": "Arkade Wallet",
   "repository": {
@@ -7,7 +7,7 @@
     "url": "https://github.com/yourusername/arkade-metamask-snap.git"
   },
   "source": {
-    "shasum": "oHkeME5jUBJN/dzBbjAY6HfJDDODYHd1XKBMXrLG+3s=",
+    "shasum": "ofRfv8Pe3jWNb1is0XVzGyKFj8db57erZGYQ+Q3ZIr0=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
