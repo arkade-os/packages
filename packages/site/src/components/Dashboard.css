@@ -58,13 +58,31 @@
 .balance-amount {
   font-size: 3rem;
   font-weight: 900;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   color: var(--white);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   background: none;
   -webkit-background-clip: unset;
   -webkit-text-fill-color: unset;
   letter-spacing: -0.02em;
+}
+
+.balance-pending {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.balance-pending::before {
+  content: '⏱';
+  font-size: 1rem;
+  opacity: 0.8;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 

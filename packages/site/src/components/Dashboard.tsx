@@ -72,21 +72,15 @@ export const Dashboard: React.FC = () => {
         <div className="balance-amount">
           {balance ? formatBTC(balance.offchain) : '0.00000000'} BTC
         </div>
+        {balance && balance.onchain > 0 && (
+          <div className="balance-pending">
+            {formatBTC(balance.onchain)} BTC pending
+          </div>
+        )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="action-buttons">
-        <button className="action-btn btn-primary" onClick={() => setShowSendModal(true)}>
-          <span className="action-icon">📤</span>
-          Send
-        </button>
-        <button className="action-btn btn-primary" onClick={() => setShowReceiveModal(true)}>
-          <span className="action-icon">📥</span>
-          Receive
-        </button>
-      </div>
 
-      {/* Addresses */}
+      {/* Address */}
       <div className="addresses-section">
         <div className="address-card">
           <div className="address-header">
@@ -101,20 +95,20 @@ export const Dashboard: React.FC = () => {
           </div>
           <code className="address-value">{formatAddress(walletInfo?.arkAddress || '')}</code>
         </div>
-        <div className="address-card">
-          <div className="address-header">
-            <span className="address-label">Boarding Address</span>
-            <button
-              className="copy-btn"
-              onClick={() => copyToClipboard(walletInfo?.boardingAddress || '')}
-              title="Copy to clipboard"
-            >
-              📋
-            </button>
-          </div>
-          <code className="address-value">{formatAddress(walletInfo?.boardingAddress || '')}</code>
-        </div>
       </div>
+
+      {/* Action Buttons */}
+      <div className="action-buttons">
+        <button className="action-btn btn-primary" onClick={() => setShowSendModal(true)}>
+          <span className="action-icon">📤</span>
+          Send
+        </button>
+        <button className="action-btn btn-primary" onClick={() => setShowReceiveModal(true)}>
+          <span className="action-icon">📥</span>
+          Receive
+        </button>
+      </div>
+
 
       {/* Transaction History */}
       <div className="transactions-section">
