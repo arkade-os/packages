@@ -1,0 +1,145 @@
+.settings-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.settings-header {
+  margin-bottom: 2rem;
+}
+
+.settings-title {
+  font-size: 2rem;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  color: var(--gray-900);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.settings-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.setting-item:first-child {
+  padding-top: 0;
+}
+
+.setting-label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.95rem;
+}
+
+.setting-value {
+  text-align: right;
+  max-width: 60%;
+}
+
+.setting-code {
+  font-size: 0.85rem;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  word-break: break-all;
+  display: inline-block;
+}
+
+.network-badge {
+  padding: 0.5rem 1rem;
+  background: var(--purple-bg);
+  color: var(--purple-primary);
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid var(--purple-light);
+  display: inline-block;
+}
+
+/* Coming Soon Section */
+.coming-soon-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--gray-50);
+  border-radius: 12px;
+}
+
+.coming-soon-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+.coming-soon-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.coming-soon-text {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 1rem;
+  }
+
+  .settings-title {
+    font-size: 1.5rem;
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .setting-value {
+    text-align: left;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .setting-code {
+    width: 100%;
+    text-align: left;
+  }
+
+  .coming-soon-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

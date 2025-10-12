@@ -193,10 +193,6 @@ function App() {
                         <h2>Wallet Information</h2>
                         <div className="info-grid">
                             <div className="info-item">
-                                <label>Taproot Address</label>
-                                <span>{walletInfo.taprootAddress}</span>
-                            </div>
-                            <div className="info-item">
                                 <label>Arkade Address</label>
                                 <span>{walletInfo.arkAddress}</span>
                             </div>

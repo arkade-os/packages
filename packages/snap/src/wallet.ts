@@ -1,5 +1,6 @@
 import { base64, hex } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
+import { SingleKey, Wallet } from '@arkade-os/sdk';
 
 /**
  * Get Bitcoin account from snap's deterministic key derivation.
@@ -17,39 +18,27 @@ export async function getBitcoinAccounts(): Promise<{ accounts: Array<{ address:
   // Derive the private key from entropy (remove 0x prefix)
   const privateKeyHex = entropy.slice(2, 66);
 
-  // Import SDK to derive public key and address
-  const { SingleKey } = await import('@arkade-os/sdk');
-  const signer = SingleKey.fromHex(privateKeyHex);
+  const identity = SingleKey.fromHex(privateKeyHex);
 
   // Get Bitcoin taproot address using the address method
-  // We need to create a temporary wallet to get the address
-  const { Wallet } = await import('@arkade-os/sdk');
   const tempWallet = await Wallet.create({
-    identity: signer,
+    identity,
     // Use a dummy URL since we only need the address
     arkServerUrl: 'https://signet.arkade.sh',
   });
 
-  const address = await tempWallet.getAddress();
-
-  // Get the public key - we need to get it from the signer
-  // The signer has the private key, we'll derive the public key
-  const privKeyBytes = hex.decode(privateKeyHex);
-
-  // Use secp256k1 to derive public key
-  const { secp256k1 } = await import('@noble/curves/secp256k1.js');
-  const publicKeyBytes = secp256k1.getPublicKey(privKeyBytes, true); // compressed
-  const fullPubKey = hex.encode(publicKeyBytes);
-
-  // Get x-only public key (remove first byte prefix for compressed key)
-  const xOnlyPubKey = publicKeyBytes.length === 33 ? hex.encode(publicKeyBytes.slice(1)) : fullPubKey;
+  const [address, publicKeyBytes, xOnlyPublicKeyBytes] = await Promise.all([
+    tempWallet.getAddress(),
+    identity.compressedPublicKey(),
+    identity.xOnlyPublicKey(),
+  ]);
 
   return {
     accounts: [
       {
         address,
-        publicKey: fullPubKey,
-        xOnlyPublicKey: xOnlyPubKey,
+        publicKey: hex.encode(publicKeyBytes),
+        xOnlyPublicKey: hex.encode(xOnlyPublicKeyBytes),
       },
     ],
   };
@@ -72,17 +61,13 @@ export async function signPsbt(params: { psbt: string; inputIndexes: number[] })
 
   const privateKeyHex = entropy.slice(2, 66);
 
-  // Import SDK
-  const { SingleKey } = await import('@arkade-os/sdk');
-  const signer = SingleKey.fromHex(privateKeyHex);
-
   // Decode PSBT
   const psbtBytes = base64.decode(psbtBase64);
   const tx = Transaction.fromPSBT(psbtBytes);
 
   // Sign the specified inputs
   for (const inputIndex of inputIndexes) {
-    tx.signIdx(signer, inputIndex);
+    tx.signIdx(hex.decode(privateKeyHex), inputIndex);
   }
 
   // Finalize and return signed PSBT

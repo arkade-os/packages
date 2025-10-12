@@ -1,19 +1,19 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Wallet } from '@arkade-os/sdk';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { Wallet, Ramps } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
 const SNAP_ID = 'local:http://localhost:8080';
 
-// Network configuration
-const ARK_SERVER_URL = 'https://signet.arkade.sh';
-const ESPLORA_URL = 'https://mempool.space/signet/api';
-const BOLTZ_URL = 'https://api.boltz.exchange';
+// Network configuration - exported for Settings page
+export const ARK_SERVER_URL = 'https://signet.arkade.sh';
+export const ESPLORA_URL = 'https://mempool.space/signet/api';
+export const BOLTZ_URL = 'https://api.boltz.exchange';
+export const NETWORK = 'signet';
 
 interface WalletInfo {
   arkAddress: string;
   boardingAddress: string;
-  taprootAddress: string;
   network: string;
 }
 
@@ -41,18 +41,22 @@ interface Transaction {
   status?: string;
 }
 
+type MetaMaskStatus = 'flask-ready' | 'no-metamask' | 'wrong-metamask' | 'other-wallet' | 'checking';
+
 interface MetaMaskContextType {
   isConnected: boolean;
   walletInfo: WalletInfo | null;
   balance: Balance | null;
   transactions: Transaction[];
   loading: boolean;
+  metamaskStatus: MetaMaskStatus;
   connectSnap: () => Promise<void>;
   sendBitcoin: (to: string, amount: number) => Promise<string>;
   getBalance: () => Promise<void>;
   getTransactionHistory: () => Promise<void>;
   payLightningInvoice: (invoice: string, maxFeeSats?: number) => Promise<any>;
   createLightningInvoice: (amount: number, description?: string) => Promise<any>;
+  onboardFunds: () => Promise<string>;
   resetWallet: () => Promise<void>;
 }
 
@@ -64,10 +68,63 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [metamaskStatus, setMetaMaskStatus] = useState<MetaMaskStatus>('checking');
 
   // Store wallet and lightning instances
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [lightning, setLightning] = useState<ArkadeLightning | null>(null);
+
+  /**
+   * Detect MetaMask Flask installation status
+   */
+  const detectMetaMaskStatus = useCallback(async (): Promise<MetaMaskStatus> => {
+    // Check if any ethereum provider exists
+    if (!window.ethereum) {
+      return 'no-metamask';
+    }
+
+    // Check if it's MetaMask
+    if (!window.ethereum.isMetaMask) {
+      return 'other-wallet';
+    }
+
+    // Check if it supports snaps (Flask feature)
+    try {
+      // Try to call wallet_getSnaps - if it works, it's Flask
+      await window.ethereum.request({
+        method: 'wallet_getSnaps',
+      });
+      return 'flask-ready';
+    } catch (error: any) {
+      // If we get 403 or method not found, it's regular MetaMask (not Flask)
+      if (error.code === 4200 || error.code === -32601) {
+        return 'wrong-metamask';
+      }
+      // Other errors might mean Flask but some other issue
+      console.error('Error detecting MetaMask Flask:', error);
+      return 'wrong-metamask';
+    }
+  }, []);
+
+  /**
+   * Check if snap is already installed
+   */
+  const checkSnapInstalled = useCallback(async (): Promise<boolean> => {
+    if (!window.ethereum) {
+      return false;
+    }
+
+    try {
+      const installedSnaps = await window.ethereum.request({
+        method: 'wallet_getSnaps',
+      });
+
+      return Boolean(installedSnaps && installedSnaps[SNAP_ID]);
+    } catch (error) {
+      console.error('Failed to check snap installation:', error);
+      return false;
+    }
+  }, []);
 
   /**
    * Connect to MetaMask Snap and initialize Arkade Wallet
@@ -81,11 +138,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
 
       // Check if snap is installed
-      const installedSnaps = await window.ethereum.request({
-        method: 'wallet_getSnaps',
-      });
-
-      const isSnapInstalled = installedSnaps && installedSnaps[SNAP_ID];
+      const isSnapInstalled = await checkSnapInstalled();
 
       if (!isSnapInstalled) {
         // Request snap installation
@@ -114,13 +167,13 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
 
       const account = accountResponse.accounts[0];
-      const taprootAddress = account.address;
+      const address = account.address;
       const publicKey = account.publicKey;
 
       // Create MetaMaskSnapIdentity
       const identity = new MetaMaskSnapIdentity(
         publicKey,
-        taprootAddress,
+        address,
         window.ethereum
       );
 
@@ -154,7 +207,6 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       setWalletInfo({
         arkAddress,
         boardingAddress,
-        taprootAddress,
         network: 'signet',
       });
 
@@ -163,7 +215,6 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.log('Wallet connected successfully!', {
         arkAddress,
         boardingAddress,
-        taprootAddress,
       });
     } catch (error: any) {
       console.error('Connection failed:', error);
@@ -171,7 +222,33 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkSnapInstalled]);
+
+  /**
+   * Detect MetaMask status on page load
+   */
+  useEffect(() => {
+    const detectAndAutoConnect = async () => {
+      try {
+        const status = await detectMetaMaskStatus();
+        setMetaMaskStatus(status);
+
+        // Only attempt auto-connect if Flask is ready
+        if (status === 'flask-ready' && !isConnected) {
+          const isInstalled = await checkSnapInstalled();
+          if (isInstalled) {
+            console.log('Snap already installed, auto-connecting...');
+            await connectSnap();
+          }
+        }
+      } catch (error) {
+        console.error('Detection failed:', error);
+        setMetaMaskStatus('no-metamask');
+      }
+    };
+
+    detectAndAutoConnect();
+  }, [detectMetaMaskStatus, checkSnapInstalled, connectSnap, isConnected]);
 
   /**
    * Get wallet balance
@@ -337,6 +414,32 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
   );
 
   /**
+   * Onboard funds from boarding address to VTXOs
+   */
+  const onboardFunds = useCallback(async (): Promise<string> => {
+    if (!wallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      setLoading(true);
+      const ramps = new Ramps(wallet);
+      const txid = await ramps.onboard();
+
+      // Refresh balance and history
+      await getBalance();
+      await getTransactionHistory();
+
+      return txid;
+    } catch (error: any) {
+      console.error('Onboarding failed:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [wallet, getBalance, getTransactionHistory]);
+
+  /**
    * Reset wallet (for testing purposes)
    */
   const resetWallet = useCallback(async () => {
@@ -356,12 +459,14 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         balance,
         transactions,
         loading,
+        metamaskStatus,
         connectSnap,
         sendBitcoin,
         getBalance,
         getTransactionHistory,
         payLightningInvoice,
         createLightningInvoice,
+        onboardFunds,
         resetWallet,
       }}
     >

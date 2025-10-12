@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Header.css';
 
 export const Header: React.FC = () => {
@@ -13,8 +14,8 @@ export const Header: React.FC = () => {
           />
         </div>
         <nav className="nav">
-          <a href="#wallet" className="nav-link">Wallet</a>
-          <a href="#about" className="nav-link">About</a>
+          <Link to="/" className="nav-link">Wallet</Link>
+          <Link to="/settings" className="nav-link">Settings</Link>
           <a href="https://arkadeos.com" target="_blank" rel="noopener noreferrer" className="nav-link">
             Docs
           </a>

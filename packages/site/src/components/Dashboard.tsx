@@ -5,10 +5,11 @@ import { ReceiveModal } from './ReceiveModal';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory, resetWallet } =
+  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory, onboardFunds } =
     useMetaMask();
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
   const [txFilter, setTxFilter] = useState<'all' | 'onchain' | 'offchain'>('all');
 
   useEffect(() => {
@@ -39,15 +40,17 @@ export const Dashboard: React.FC = () => {
     navigator.clipboard.writeText(text);
   };
 
-  const handleResetWallet = async () => {
-    if (window.confirm('⚠️ WARNING: This will permanently delete your wallet data!\n\nMake sure you have:\n✓ Backed up your recovery phrase\n✓ Withdrawn all funds\n\nThis action cannot be undone. Are you sure?')) {
-      try {
-        await resetWallet();
-        // Reload the page to return to the initial state
-        window.location.reload();
-      } catch (error) {
-        console.error('Error resetting wallet:', error);
-      }
+  const handleSettleTransaction = async (txid: string) => {
+    try {
+      setSettlingTxId(txid);
+      await onboardFunds();
+      // Refresh balance and transactions after settling
+      await getBalance();
+      await getTransactionHistory();
+    } catch (error) {
+      console.error('Error settling transaction:', error);
+    } finally {
+      setSettlingTxId(null);
     }
   };
 
@@ -66,22 +69,8 @@ export const Dashboard: React.FC = () => {
           <h2 className="balance-label">Your Balance</h2>
           {loading && <span className="loading-spinner animate-pulse">↻</span>}
         </div>
-        <div className="balance-amount gradient-text">
+        <div className="balance-amount">
           {balance ? formatBTC(balance.offchain) : '0.00000000'} BTC
-        </div>
-        <div className="balance-breakdown">
-          <div className="balance-item">
-            <span className="balance-item-label">⚡ VTXOs (Available)</span>
-            <span className="balance-item-value">
-              {balance?.vtxoList?.length || 0} VTXOs
-            </span>
-          </div>
-          <div className="balance-item">
-            <span className="balance-item-label">🔗 Boarding (Pending)</span>
-            <span className="balance-item-value">
-              {balance ? formatBTC(balance.onchain) : '0.00000000'} BTC
-            </span>
-          </div>
         </div>
       </div>
 
@@ -104,26 +93,26 @@ export const Dashboard: React.FC = () => {
             <span className="address-label">Ark Address</span>
             <button
               className="copy-btn"
-              onClick={() => copyToClipboard(walletInfo?.arkAddress)}
+              onClick={() => copyToClipboard(walletInfo?.arkAddress || '')}
               title="Copy to clipboard"
             >
               📋
             </button>
           </div>
-          <code className="address-value">{formatAddress(walletInfo?.arkAddress)}</code>
+          <code className="address-value">{formatAddress(walletInfo?.arkAddress || '')}</code>
         </div>
         <div className="address-card">
           <div className="address-header">
             <span className="address-label">Boarding Address</span>
             <button
               className="copy-btn"
-              onClick={() => copyToClipboard(walletInfo?.boardingAddress)}
+              onClick={() => copyToClipboard(walletInfo?.boardingAddress || '')}
               title="Copy to clipboard"
             >
               📋
             </button>
           </div>
-          <code className="address-value">{formatAddress(walletInfo?.boardingAddress)}</code>
+          <code className="address-value">{formatAddress(walletInfo?.boardingAddress || '')}</code>
         </div>
       </div>
 
@@ -178,6 +167,23 @@ export const Dashboard: React.FC = () => {
                     {formatBTC(tx.amount)} BTC
                   </span>
                 </div>
+                {tx.layer === 'onchain' && tx.type === 'receive' && (
+                  <button
+                    className="settle-btn"
+                    onClick={() => handleSettleTransaction(tx.txid)}
+                    disabled={settlingTxId === tx.txid}
+                    title="Convert to VTXOs"
+                  >
+                    {settlingTxId === tx.txid ? (
+                      <>
+                        <span className="loading-spinner animate-pulse">↻</span>
+                        Settling...
+                      </>
+                    ) : (
+                      <>🚀 Settle</>
+                    )}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -188,27 +194,6 @@ export const Dashboard: React.FC = () => {
             <p className="empty-subtext">Send or receive Bitcoin to see your transaction history</p>
           </div>
         )}
-      </div>
-
-      {/* Settings Section */}
-      <div className="settings-section">
-        <h2 className="section-title">Settings</h2>
-        <div className="danger-zone">
-          <div className="danger-zone-header">
-            <span className="danger-icon">⚠️</span>
-            <h3 className="danger-title">Danger Zone</h3>
-          </div>
-          <p className="danger-description">
-            Reset your wallet to remove all stored data. Make sure you have backed up your recovery phrase and withdrawn all funds before proceeding.
-          </p>
-          <button
-            className="btn-danger"
-            onClick={handleResetWallet}
-            disabled={loading}
-          >
-            Reset Wallet
-          </button>
-        </div>
       </div>
 
       {/* Modals */}
