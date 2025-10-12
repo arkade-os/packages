@@ -1,20 +1,73 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Wallet, Ramps } from '@arkade-os/sdk';
+import { Wallet, Ramps, type NetworkName } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
 const SNAP_ID = 'local:http://localhost:8080';
+const NETWORK_STORAGE_KEY = 'arkade-snap-network';
 
-// Network configuration - exported for Settings page
-export const ARK_SERVER_URL = 'https://signet.arkade.sh';
-export const ESPLORA_URL = 'https://mempool.space/signet/api';
-export const BOLTZ_URL = 'https://api.boltz.exchange';
-export const NETWORK = 'signet';
+// Network configuration type
+export type SupportedNetwork = 'bitcoin' | 'signet';
+
+// Network configurations
+export interface NetworkConfig {
+  arkServerUrl: string;
+  esploraUrl: string;
+  boltzUrl?: string;
+  networkName: NetworkName;
+  hasLightning: boolean;
+}
+
+export const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
+  bitcoin: {
+    arkServerUrl: 'https://bitcoin-beta-v8.arkade.sh',
+    esploraUrl: 'https://mempool.space/api',
+    boltzUrl: 'https://boltz-v8.arkade.sh',
+    networkName: 'bitcoin',
+    hasLightning: true,
+  },
+  signet: {
+    arkServerUrl: 'https://signet.arkade.sh',
+    esploraUrl: 'https://mempool.space/signet/api',
+    boltzUrl: undefined, // No Boltz support for Signet
+    networkName: 'signet',
+    hasLightning: false,
+  },
+};
+
+// Default network - can be changed by user
+export const DEFAULT_NETWORK: SupportedNetwork = 'bitcoin';
+
+/**
+ * Get saved network from localStorage or return default
+ */
+const getSavedNetwork = (): SupportedNetwork => {
+  try {
+    const saved = localStorage.getItem(NETWORK_STORAGE_KEY);
+    if (saved === 'bitcoin' || saved === 'signet') {
+      return saved;
+    }
+  } catch (error) {
+    console.warn('Failed to read network from localStorage:', error);
+  }
+  return DEFAULT_NETWORK;
+};
+
+/**
+ * Save network selection to localStorage
+ */
+const saveNetwork = (network: SupportedNetwork): void => {
+  try {
+    localStorage.setItem(NETWORK_STORAGE_KEY, network);
+  } catch (error) {
+    console.warn('Failed to save network to localStorage:', error);
+  }
+};
 
 interface WalletInfo {
   arkAddress: string;
   boardingAddress: string;
-  network: string;
+  network: SupportedNetwork;
 }
 
 interface Balance {
@@ -50,6 +103,8 @@ interface MetaMaskContextType {
   transactions: Transaction[];
   loading: boolean;
   metamaskStatus: MetaMaskStatus;
+  currentNetwork: SupportedNetwork;
+  networkConfig: NetworkConfig;
   connectSnap: () => Promise<void>;
   sendBitcoin: (to: string, amount: number) => Promise<string>;
   getBalance: () => Promise<void>;
@@ -58,6 +113,7 @@ interface MetaMaskContextType {
   createLightningInvoice: (amount: number, description?: string) => Promise<any>;
   onboardFunds: () => Promise<string>;
   resetWallet: () => Promise<void>;
+  switchNetwork: (network: SupportedNetwork) => Promise<void>;
 }
 
 const MetaMaskContext = createContext<MetaMaskContextType | null>(null);
@@ -69,6 +125,10 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [metamaskStatus, setMetaMaskStatus] = useState<MetaMaskStatus>('checking');
+  const [currentNetwork, setCurrentNetwork] = useState<SupportedNetwork>(getSavedNetwork());
+
+  // Get current network configuration
+  const networkConfig = NETWORK_CONFIGS[currentNetwork];
 
   // Store wallet and lightning instances
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -180,24 +240,27 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Create Arkade Wallet
       const arkWallet = await Wallet.create({
         identity,
-        arkServerUrl: ARK_SERVER_URL,
-        esploraUrl: ESPLORA_URL,
+        arkServerUrl: networkConfig.arkServerUrl,
+        esploraUrl: networkConfig.esploraUrl,
       });
 
       // Get Ark addresses
       const arkAddress = await arkWallet.getAddress();
       const boardingAddress = await arkWallet.getBoardingAddress();
 
-      // Initialize Lightning
-      const swapProvider = new BoltzSwapProvider({
-        apiUrl: BOLTZ_URL,
-        network: 'signet' as any,
-      });
+      // Initialize Lightning (only if network supports it)
+      let arkLightning: ArkadeLightning | null = null;
+      if (networkConfig.hasLightning && networkConfig.boltzUrl) {
+        const swapProvider = new BoltzSwapProvider({
+          apiUrl: networkConfig.boltzUrl,
+          network: networkConfig.networkName as any,
+        });
 
-      const arkLightning = new ArkadeLightning({
-        wallet: arkWallet as any, // Type mismatch between SDK versions
-        swapProvider,
-      });
+        arkLightning = new ArkadeLightning({
+          wallet: arkWallet as any, // Type mismatch between SDK versions
+          swapProvider,
+        });
+      }
 
       // Store instances
       setWallet(arkWallet);
@@ -207,7 +270,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       setWalletInfo({
         arkAddress,
         boardingAddress,
-        network: 'signet',
+        network: currentNetwork,
       });
 
       setIsConnected(true);
@@ -222,7 +285,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
     } finally {
       setLoading(false);
     }
-  }, [checkSnapInstalled]);
+  }, [checkSnapInstalled, networkConfig, currentNetwork]);
 
   /**
    * Detect MetaMask status on page load
@@ -451,6 +514,47 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
     setIsConnected(false);
   }, []);
 
+  /**
+   * Switch network and reconnect wallet
+   */
+  const switchNetwork = useCallback(async (newNetwork: SupportedNetwork) => {
+    if (newNetwork === currentNetwork) {
+      return; // Already on this network
+    }
+
+    try {
+      setLoading(true);
+
+      // Reset wallet state
+      setWallet(null);
+      setLightning(null);
+      setWalletInfo(null);
+      setBalance(null);
+      setTransactions([]);
+      setIsConnected(false);
+
+      // Update network and persist to localStorage
+      setCurrentNetwork(newNetwork);
+      saveNetwork(newNetwork);
+
+      // Wait a bit for state to settle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Reconnect with new network
+      await connectSnap();
+
+      console.log(`Switched to ${newNetwork} network successfully`);
+    } catch (error: any) {
+      console.error('Network switch failed:', error);
+      // Revert to previous network on error
+      setCurrentNetwork(currentNetwork);
+      saveNetwork(currentNetwork);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [currentNetwork, connectSnap]);
+
   return (
     <MetaMaskContext.Provider
       value={{
@@ -460,6 +564,8 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         transactions,
         loading,
         metamaskStatus,
+        currentNetwork,
+        networkConfig,
         connectSnap,
         sendBitcoin,
         getBalance,
@@ -468,6 +574,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         createLightningInvoice,
         onboardFunds,
         resetWallet,
+        switchNetwork,
       }}
     >
       {children}

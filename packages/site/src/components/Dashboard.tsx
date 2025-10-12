@@ -5,7 +5,7 @@ import { ReceiveModal } from './ReceiveModal';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory, onboardFunds } =
+  const { walletInfo, balance, transactions, loading, currentNetwork, getBalance, getTransactionHistory, onboardFunds } =
     useMetaMask();
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -59,7 +59,7 @@ export const Dashboard: React.FC = () => {
       <div className="dashboard-header">
         <h1 className="dashboard-title">Your Arkade Wallet</h1>
         <div className="network-badge">
-          {walletInfo?.network === 'signet' ? 'SigNet' : 'Bitcoin'}
+          {currentNetwork === 'signet' ? 'SigNet' : 'Bitcoin'}
         </div>
       </div>
 

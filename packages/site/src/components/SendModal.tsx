@@ -9,7 +9,7 @@ interface SendModalProps {
 type SendMethod = 'arkade' | 'lightning' | null;
 
 export const SendModal: React.FC<SendModalProps> = ({ onClose }) => {
-  const { sendBitcoin, payLightningInvoice, loading } = useMetaMask();
+  const { sendBitcoin, payLightningInvoice, loading, networkConfig } = useMetaMask();
   const [method, setMethod] = useState<SendMethod>(null);
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
@@ -73,16 +73,18 @@ export const SendModal: React.FC<SendModalProps> = ({ onClose }) => {
             <div className="method-description">Send to Bitcoin address via VTXOs</div>
           </div>
         </button>
-        <button
-          className="method-btn"
-          onClick={() => setMethod('lightning')}
-        >
-          <div className="method-icon">⚡</div>
-          <div className="method-info">
-            <div className="method-name">Lightning</div>
-            <div className="method-description">Pay Lightning invoice</div>
-          </div>
-        </button>
+        {networkConfig.hasLightning && (
+          <button
+            className="method-btn"
+            onClick={() => setMethod('lightning')}
+          >
+            <div className="method-icon">⚡</div>
+            <div className="method-info">
+              <div className="method-name">Lightning</div>
+              <div className="method-description">Pay Lightning invoice</div>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );

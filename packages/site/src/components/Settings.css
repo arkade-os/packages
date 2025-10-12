@@ -82,6 +82,52 @@
   display: inline-block;
 }
 
+/* Network Selector */
+.network-selector {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--gray-100);
+  padding: 0.25rem;
+  border-radius: 12px;
+}
+
+.network-option {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--gray-600);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.network-option:hover:not(:disabled) {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.network-option.active {
+  background: var(--purple-primary);
+  color: var(--white);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.network-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Confirmation Dialog Text */
+.confirm-text {
+  margin: 0 0 0.75rem 0;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
 /* Coming Soon Section */
 .coming-soon-container {
   display: flex;

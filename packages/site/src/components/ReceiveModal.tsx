@@ -9,7 +9,7 @@ interface ReceiveModalProps {
 type ReceiveMethod = 'arkade' | 'lightning' | null;
 
 export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
-  const { walletInfo, createLightningInvoice, loading } = useMetaMask();
+  const { walletInfo, createLightningInvoice, loading, networkConfig } = useMetaMask();
   const [method, setMethod] = useState<ReceiveMethod>(null);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -57,16 +57,18 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
             <div className="method-description">Receive to your Ark or Boarding address</div>
           </div>
         </button>
-        <button
-          className="method-btn"
-          onClick={() => setMethod('lightning')}
-        >
-          <div className="method-icon">⚡</div>
-          <div className="method-info">
-            <div className="method-name">Lightning</div>
-            <div className="method-description">Create Lightning invoice</div>
-          </div>
-        </button>
+        {networkConfig.hasLightning && (
+          <button
+            className="method-btn"
+            onClick={() => setMethod('lightning')}
+          >
+            <div className="method-icon">⚡</div>
+            <div className="method-info">
+              <div className="method-name">Lightning</div>
+              <div className="method-description">Create Lightning invoice</div>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );
