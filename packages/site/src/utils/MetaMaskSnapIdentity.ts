@@ -1,5 +1,6 @@
 import { base64, hex } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
+import type { SignerSession } from '@arkade-os/sdk';
 
 /**
  * MetaMask Snap identity implementation for Bitcoin signing.
@@ -23,10 +24,49 @@ export class MetaMaskSnapIdentity {
 
   /**
    * Get x-only public key (32 bytes, no prefix)
+   * Required by Identity interface - must be async
    */
-  xOnlyPublicKey(): Uint8Array {
+  async xOnlyPublicKey(): Promise<Uint8Array> {
     const fullPubkey = this.publicKey;
     return fullPubkey.length === 33 ? fullPubkey.slice(1) : fullPubkey;
+  }
+
+  /**
+   * Get compressed public key (33 bytes with prefix)
+   * Required by Identity interface
+   */
+  async compressedPublicKey(): Promise<Uint8Array> {
+    return this.publicKey;
+  }
+
+  /**
+   * Get signer session for MuSig2 signing
+   * Required by Identity interface for collaborative signing with Ark server
+   *
+   * Note: MuSig2 signing is not yet supported by MetaMask Snap.
+   */
+  signerSession(): SignerSession {
+    throw new Error('MuSig2 signing sessions are not yet supported by MetaMask Snap');
+  }
+
+  /**
+   * Sign a message with the private key
+   * Required by Identity interface
+   *
+   * @param _message - The message to sign (unused, marked with _ prefix)
+   * @param signatureType - Either "schnorr" or "ecdsa"
+   * @returns The signature as a Uint8Array
+   */
+  async signMessage(
+    _message: Uint8Array,
+    signatureType: 'schnorr' | 'ecdsa' = 'schnorr'
+  ): Promise<Uint8Array> {
+    // TODO: Add bitcoin_signMessage RPC method to the snap
+    // For now, throw an error since the snap doesn't support message signing yet
+    throw new Error(
+      `Message signing (${signatureType}) is not yet supported by MetaMask Snap. ` +
+      'This feature requires adding a bitcoin_signMessage RPC method to the snap.'
+    );
   }
 
   /**
