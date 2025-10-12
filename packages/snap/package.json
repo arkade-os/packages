@@ -1,0 +1,50 @@
+{
+  "name": "arkade-snap",
+  "version": "0.1.0",
+  "description": "Arkade Wallet Snap - Bitcoin Layer 2 wallet with Ark protocol support",
+  "main": "./dist/bundle.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/arkade-metamask-snap.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "mm-snap build",
+    "build:clean": "yarn clean && yarn build",
+    "clean": "rimraf dist",
+    "lint": "yarn lint:eslint && yarn lint:misc --check",
+    "lint:eslint": "eslint . --cache --ext js,ts",
+    "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write",
+    "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' --ignore-path .gitignore",
+    "serve": "mm-snap serve",
+    "start": "mm-snap watch",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@arkade-os/boltz-swap": "0.2.1-alpha.3",
+    "@arkade-os/sdk": "0.3.1-alpha.3",
+    "@metamask/snaps-sdk": "^6.0.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.5.0",
+    "@metamask/eslint-config": "^12.0.0",
+    "@metamask/eslint-config-jest": "^12.0.0",
+    "@metamask/eslint-config-nodejs": "^12.0.0",
+    "@metamask/eslint-config-typescript": "^12.0.0",
+    "@metamask/snaps-cli": "^6.0.0",
+    "@metamask/snaps-jest": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.42.0",
+    "@typescript-eslint/parser": "^5.42.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jest": "^27.1.5",
+    "eslint-plugin-jsdoc": "^41.0.0",
+    "eslint-plugin-n": "^15.7.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "jest": "^29.5.0",
+    "prettier": "^3.6.2",
+    "rimraf": "^3.0.2",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.7.3"
+  }
+}
