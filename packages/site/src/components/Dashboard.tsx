@@ -5,7 +5,7 @@ import { ReceiveModal } from './ReceiveModal';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory } =
+  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory, resetWallet } =
     useMetaMask();
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -37,6 +37,18 @@ export const Dashboard: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleResetWallet = async () => {
+    if (window.confirm('⚠️ WARNING: This will permanently delete your wallet data!\n\nMake sure you have:\n✓ Backed up your recovery phrase\n✓ Withdrawn all funds\n\nThis action cannot be undone. Are you sure?')) {
+      try {
+        await resetWallet();
+        // Reload the page to return to the initial state
+        window.location.reload();
+      } catch (error) {
+        console.error('Error resetting wallet:', error);
+      }
+    }
   };
 
   return (
@@ -165,9 +177,6 @@ export const Dashboard: React.FC = () => {
                     {tx.type === 'send' ? '-' : '+'}
                     {formatBTC(tx.amount)} BTC
                   </span>
-                  <div className="transaction-status">
-                    {tx.confirmations > 0 ? `✓ ${tx.confirmations} conf` : '⏳ Pending'}
-                  </div>
                 </div>
               </div>
             ))}
@@ -179,6 +188,27 @@ export const Dashboard: React.FC = () => {
             <p className="empty-subtext">Send or receive Bitcoin to see your transaction history</p>
           </div>
         )}
+      </div>
+
+      {/* Settings Section */}
+      <div className="settings-section">
+        <h2 className="section-title">Settings</h2>
+        <div className="danger-zone">
+          <div className="danger-zone-header">
+            <span className="danger-icon">⚠️</span>
+            <h3 className="danger-title">Danger Zone</h3>
+          </div>
+          <p className="danger-description">
+            Reset your wallet to remove all stored data. Make sure you have backed up your recovery phrase and withdrawn all funds before proceeding.
+          </p>
+          <button
+            className="btn-danger"
+            onClick={handleResetWallet}
+            disabled={loading}
+          >
+            Reset Wallet
+          </button>
+        </div>
       </div>
 
       {/* Modals */}

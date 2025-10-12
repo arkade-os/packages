@@ -20,6 +20,7 @@ interface MetaMaskContextType {
   payLightningInvoice: (invoice: string) => Promise<void>;
   createLightningInvoice: (amount: number, description?: string) => Promise<any>;
   resetWallet: () => Promise<void>;
+  startMonitoring: () => Promise<void>;
 }
 
 const MetaMaskContext = createContext<MetaMaskContextType | undefined>(undefined);
@@ -175,6 +176,8 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
         setIsConnected(true);
         // Also fetch balance if wallet exists
         await getBalance();
+        // Start real-time monitoring for incoming funds
+        await startMonitoring();
       } else {
         setWalletInfo(null);
         // If no wallet but snap is connected, we're in the "create wallet" state
@@ -202,6 +205,8 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
       if (response.success) {
         setWalletInfo(response.data);
         await getBalance();
+        // Start real-time monitoring for the new wallet
+        await startMonitoring();
       } else {
         throw new Error(response.message || 'Failed to create wallet');
       }
@@ -326,6 +331,22 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
     }
   };
 
+  const startMonitoring = async () => {
+    try {
+      console.log('Starting real-time monitoring...');
+      const response = await invokeSnap('arkade_startMonitoring');
+
+      if (response.success) {
+        console.log('Real-time monitoring started successfully');
+      } else {
+        console.warn('Failed to start monitoring:', response.message);
+      }
+    } catch (err: any) {
+      console.error('Error starting monitoring:', err);
+      // Don't throw - monitoring is optional, app should work without it
+    }
+  };
+
   const value: MetaMaskContextType = {
     isFlask,
     isSnapInstalled,
@@ -344,6 +365,7 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
     payLightningInvoice,
     createLightningInvoice,
     resetWallet,
+    startMonitoring,
   };
 
   return <MetaMaskContext.Provider value={value}>{children}</MetaMaskContext.Provider>;

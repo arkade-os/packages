@@ -1,6 +1,6 @@
 import type { OnRpcRequestHandler } from '@metamask/snaps-sdk';
 import { panel, text, heading, copyable, divider } from '@metamask/snaps-sdk';
-import { createWallet, getWalletInfo, sendBitcoin, getBalance, getTransactionHistory, payLightningInvoice, createLightningInvoice, resetWallet } from './wallet';
+import { createWallet, getWalletInfo, sendBitcoin, getBalance, getTransactionHistory, payLightningInvoice, createLightningInvoice, resetWallet, startIncomingFundsMonitoring } from './wallet';
 
 /**
  * Handle incoming JSON-RPC requests from dapps.
@@ -41,6 +41,9 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ origin, request }) => 
 
     case 'arkade_resetWallet':
       return await handleResetWallet();
+
+    case 'arkade_startMonitoring':
+      return await handleStartMonitoring();
 
     default:
       throw new Error(`Method not found: ${request.method}`);
@@ -497,6 +500,37 @@ async function handleResetWallet() {
     };
   } catch (error) {
     console.error('Error resetting wallet:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Start monitoring for incoming funds.
+ */
+async function handleStartMonitoring() {
+  try {
+    console.log('Starting incoming funds monitoring from snap...');
+
+    // Start monitoring - this runs in the background
+    // We don't store the stop function as it's not JSON-serializable
+    // The monitoring will run as long as the snap is active
+    const stopFn = await startIncomingFundsMonitoring();
+
+    // Note: We can't return or store the stop function in MetaMask state
+    // as functions are not JSON-serializable. The monitoring will stop
+    // when the snap is reloaded or the wallet is reset.
+
+    console.log('Monitoring started, stop function available but not stored');
+
+    return {
+      success: true,
+      message: 'Incoming funds monitoring started',
+    };
+  } catch (error) {
+    console.error('Error starting monitoring:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error',
