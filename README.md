@@ -2,8 +2,7 @@
 
 ![Arkade Wallet](./packages/site/public/logo.png)
 
-A modern MetaMask Snap that brings Bitcoin Layer 2 functionality to your browser. Experience instant off-chain transactions, Lightning Network payments, and Tether support through the revolutionary Ark protocol.
-Built using the [Arkade SDK](https://arkadeos.com) and [MetaMask Snaps](https://metamask.io/snaps/), this project demonstrates a **simplified provider pattern** where the Snap only handles Bitcoin signing operations, while all wallet logic runs in the frontend.
+A modern MetaMask Snap that brings Bitcoin, Lightning and Ark functionality to your browser. Built with [Arkade SDK](https://arkadeos.com) and [MetaMask Snaps](https://metamask.io/snaps/), this project demonstrates a **simplified provider pattern** where the Snap only handles Bitcoin signing operations, while all wallet logic runs in the frontend.
 
 ## Architecture
 
