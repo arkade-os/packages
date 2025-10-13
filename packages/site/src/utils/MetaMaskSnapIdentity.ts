@@ -1,6 +1,5 @@
 import { base64, hex } from '@scure/base';
-import { Transaction } from '@scure/btc-signer';
-import type { SignerSession } from '@arkade-os/sdk';
+import { type SignerSession, Transaction } from '@arkade-os/sdk';
 
 /**
  * MetaMask Snap identity implementation for Bitcoin signing.
@@ -168,7 +167,7 @@ export class MetaMaskSnapIdentity {
 
       if (response && response.psbt) {
         const signedPsbtBytes = base64.decode(response.psbt);
-        const signedTx = Transaction.fromPSBT(signedPsbtBytes);
+        const signedTx = Transaction.fromPSBT(signedPsbtBytes, { allowUnknown: true });
         console.log('Successfully created signed transaction');
         return signedTx;
       } else {

@@ -71,7 +71,7 @@ export async function signPsbt(params: { psbt: string; inputIndexes: number[] })
   const psbtBytes = base64.decode(psbtBase64);
   console.log('[Snap] PSBT length:', psbtBytes.length);
 
-  const tx = Transaction.fromPSBT(psbtBytes);
+  const tx = Transaction.fromPSBT(psbtBytes, { allowUnknown: true });
   console.log('[Snap] Transaction before signing:', {
     inputsLength: tx.inputsLength,
     outputsLength: tx.outputsLength,
