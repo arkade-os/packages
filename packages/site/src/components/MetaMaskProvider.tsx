@@ -323,6 +323,23 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       const bal = await wallet.getBalance();
       const vtxos = await wallet.getVtxos();
 
+      console.log('[MetaMaskProvider] Balance from SDK:', {
+        total: Number(bal.total),
+        available: Number(bal.available),
+        settled: Number(bal.settled || 0n),
+        preconfirmed: Number(bal.preconfirmed || 0n),
+        recoverable: Number(bal.recoverable || 0n),
+        boarding: Number(bal.boarding.total),
+      });
+
+      console.log('[MetaMaskProvider] VTXOs:', vtxos.map((v: any) => ({
+        id: v.id,
+        amount: Number(v.amount || v.value || 0),
+        pending: v.pending,
+        settled: v.settled,
+        spent: v.spent,
+      })));
+
       const vtxoList = vtxos.map((vtxo: any) => ({
         id: vtxo.id || vtxo.txid || `${vtxo.txid}:${vtxo.vout}`,
         amount: Number(vtxo.amount || vtxo.value || 0),
@@ -457,11 +474,11 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         });
 
         // Start monitoring for payment
-        lightning.waitAndClaim(result.pendingSwap).then(() => {
+        lightning.waitAndClaim(result.pendingSwap as { id: string; amount: number; expiry: number; status: string }).then(() => {
           console.log('Lightning payment received and claimed');
           getBalance();
           getTransactionHistory();
-        }).catch((error) => {
+        }).catch((error: unknown) => {
           console.error('Failed to claim Lightning payment:', error);
         });
 
