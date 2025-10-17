@@ -32,7 +32,9 @@
     "lint": "pnpm lint:eslint && pnpm lint:misc --check",
     "lint:eslint": "eslint . --cache --ext js,ts",
     "lint:fix": "pnpm lint:eslint --fix && pnpm lint:misc --write",
-    "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' --ignore-path .gitignore",
+    "lint:misc": "prettier '**/*.json' --ignore-path ../../.prettierignore",
+    "format": "pnpm lint:misc --write && pnpm lint:eslint --fix",
+    "format:check": "pnpm lint:misc --check",
     "serve": "mm-snap serve",
     "start": "mm-snap watch",
     "test": "vitest run",
@@ -40,6 +42,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@arkade-os/sdk": "0.3.0",
     "@metamask/snaps-sdk": "^6.0.0",
     "@noble/curves": "^2.0.1",
     "@scure/base": "^2.0.0",

@@ -9,7 +9,12 @@
     "dev": "vite",
     "start": "vite --port 8000",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "pnpm lint:eslint && pnpm lint:misc --check",
+    "lint:eslint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "pnpm lint:eslint --fix && pnpm lint:misc --write",
+    "lint:misc": "prettier '**/*.{json,css}' --ignore-path ../../.prettierignore",
+    "format": "pnpm lint:misc --write && pnpm lint:eslint --fix",
+    "format:check": "pnpm lint:misc --check"
   },
   "dependencies": {
     "@metamask/providers": "^18.3.0",
@@ -30,6 +35,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.7.3",
     "vite": "^5.0.0"
   }

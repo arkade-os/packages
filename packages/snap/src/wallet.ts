@@ -1,5 +1,7 @@
-import { base64, hex } from '@scure/base';
 import { Transaction, SingleKey, ArkAddress, DefaultVtxo } from '@arkade-os/sdk';
+import { base64, hex } from '@scure/base';
+
+import type { ArkadeAddress, PubKeyHex, XOnlyPubKeyHex } from './types';
 import {
   validateInputIndexes,
   validateNetwork,
@@ -7,7 +9,6 @@ import {
   validateSignerPubkey,
   validateUnilateralExitDelay,
 } from './utils';
-import type { ArkadeAddress, PubKeyHex, XOnlyPubKeyHex } from './types';
 
 /**
  * Get public keys from snap's deterministic key derivation.

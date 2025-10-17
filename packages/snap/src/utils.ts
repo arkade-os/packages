@@ -1,4 +1,5 @@
 import type { NetworkName } from '@arkade-os/sdk';
+
 import type { XOnlyPubKeyHex } from './types';
 
 /**
@@ -21,7 +22,7 @@ function isValidNetwork(network: unknown): network is NetworkName {
  * @returns True if the string contains only hex characters.
  */
 function isValidHex(value: string): boolean {
-  return /^[0-9a-fA-F]+$/.test(value);
+  return /^[0-9a-fA-F]+$/u.test(value);
 }
 
 /**
@@ -79,7 +80,7 @@ function validatePsbt(psbt: unknown): string {
     throw new Error('PSBT cannot be empty');
   }
   // Validate base64 format
-  if (!/^[A-Za-z0-9+/=]+$/.test(psbt)) {
+  if (!/^[A-Za-z0-9+/=]+$/u.test(psbt)) {
     throw new Error('Invalid PSBT: must be a valid base64 string');
   }
   return psbt;

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   validateInputIndexes,
   validateNetwork,
@@ -81,7 +82,7 @@ describe('Validation Utilities', () => {
     });
 
     it('throws on non-hex pubkey', () => {
-      expect(() => validateSignerPubkey('xyz' + 'a'.repeat(61))).toThrow(
+      expect(() => validateSignerPubkey(`xyz${  'a'.repeat(61)}`)).toThrow(
         'must be a valid hex string',
       );
     });

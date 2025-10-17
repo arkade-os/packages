@@ -17,7 +17,9 @@
     "clean": "pnpm -r clean",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "lint:fix": "pnpm -r lint:fix"
+    "lint:fix": "pnpm -r lint:fix",
+    "format": "pnpm -r format",
+    "format:check": "pnpm -r format:check"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,4 +1,5 @@
 import type { OnRpcRequestHandler } from '@metamask/snaps-sdk';
+
 import { getAddress, getPublicKey, signPsbt } from './wallet';
 
 /**

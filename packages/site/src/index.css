@@ -7,23 +7,24 @@
 }
 
 :root {
-  --purple-primary: #8B5CF6;
-  --purple-dark: #7C3AED;
-  --purple-light: #A78BFA;
-  --purple-bg: #F5F3FF;
-  --orange-accent: #F97316;
+  --purple-primary: #8b5cf6;
+  --purple-dark: #7c3aed;
+  --purple-light: #a78bfa;
+  --purple-bg: #f5f3ff;
+  --orange-accent: #f97316;
   --gray-900: #111827;
-  --gray-800: #1F2937;
+  --gray-800: #1f2937;
   --gray-700: #374151;
-  --gray-600: #4B5563;
-  --gray-500: #6B7280;
-  --gray-400: #9CA3AF;
-  --gray-300: #D1D5DB;
-  --gray-200: #E5E7EB;
-  --gray-100: #F3F4F6;
-  --white: #FFFFFF;
+  --gray-600: #4b5563;
+  --gray-500: #6b7280;
+  --gray-400: #9ca3af;
+  --gray-300: #d1d5db;
+  --gray-200: #e5e7eb;
+  --gray-100: #f3f4f6;
+  --white: #ffffff;
 
-  --font-family: 'TT Firs Neue Trial', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-family:
+    'TT Firs Neue Trial', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -46,7 +47,12 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.2;
 }
@@ -64,7 +70,8 @@ button:disabled {
   opacity: 0.6;
 }
 
-input, textarea {
+input,
+textarea {
   font-family: var(--font-family);
   outline: none;
 }
@@ -114,7 +121,8 @@ code {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

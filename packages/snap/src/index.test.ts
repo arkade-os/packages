@@ -1,21 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { onRpcRequest } from './index';
+
+import { onRpcRequest } from ".";
 
 // Mock the wallet module
-vi.mock('./wallet', () => import('./__mocks__/wallet'));
+vi.mock('./wallet', async () => import('./__mocks__/wallet'));
 
 // Helper to create JSON-RPC 2.0 compliant requests
 let requestId = 0;
-const createRequest = (method: string, params?: unknown) => ({
-  origin: 'http://localhost:8000',
-  request: {
-    id: ++requestId,
-    jsonrpc: '2.0',
-    method,
-    ...(params !== undefined && { params }),
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any);
+const createRequest = (method: string, params?: unknown) => {
+  requestId += 1;
+  return {
+    origin: 'http://localhost:8000',
+    request: {
+      id: requestId,
+      jsonrpc: '2.0',
+      method,
+      ...(params !== undefined && { params }),
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+};
 
 describe('RPC Handler', () => {
   beforeEach(() => {
@@ -38,9 +42,9 @@ describe('RPC Handler', () => {
       };
 
       // Compressed public key is 33 bytes = 66 hex chars
-      expect(result.compressedPublicKey).toMatch(/^[0-9a-fA-F]{66}$/);
+      expect(result.compressedPublicKey).toMatch(/^[0-9a-fA-F]{66}$/u);
       // x-only public key is 32 bytes = 64 hex chars
-      expect(result.xOnlyPublicKey).toMatch(/^[0-9a-fA-F]{64}$/);
+      expect(result.xOnlyPublicKey).toMatch(/^[0-9a-fA-F]{64}$/u);
     });
 
     it('does not require any parameters', async () => {
@@ -68,7 +72,7 @@ describe('RPC Handler', () => {
         createRequest('arkade_getAddress', { ...validParams, network: 'bitcoin' }),
       )) as { address: string };
 
-      expect(result.address).toMatch(/^ark1/);
+      expect(result.address).toMatch(/^ark1/u);
     });
 
     it('returns tark prefix for testnet/signet networks', async () => {
@@ -76,7 +80,7 @@ describe('RPC Handler', () => {
         createRequest('arkade_getAddress', { ...validParams, network: 'signet' }),
       )) as { address: string };
 
-      expect(result.address).toMatch(/^tark1/);
+      expect(result.address).toMatch(/^tark1/u);
     });
 
     it('throws on missing network parameter', async () => {
@@ -171,7 +175,7 @@ describe('RPC Handler', () => {
       )) as { psbt: string };
 
       // Should be base64 format (our mock adds _signed suffix but that's fine)
-      expect(result.psbt).toMatch(/^[A-Za-z0-9+/=_]+$/);
+      expect(result.psbt).toMatch(/^[A-Za-z0-9+/=_]+$/u);
     });
 
     it('throws on missing psbt parameter', async () => {
