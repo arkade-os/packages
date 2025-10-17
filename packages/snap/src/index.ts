@@ -12,7 +12,7 @@ import { getAddress, getPublicKey, exportPrivateKey, signPsbt } from './wallet';
  *   No params required
  *   Returns: { hex: string, nsec: string }
  *   WARNING: Shows confirmation dialog to user before exposing private key
- * - arkade_getAddress: Get the Bitcoin Ark address
+ * - arkade_getAddress: Get the Bitcoin Arkade address
  *   Params: { network: NetworkName, signerPubkey: string, unilateralExitDelay: string }
  *   - network: 'bitcoin' | 'testnet' | 'signet' | 'mutinynet' | 'regtest'
  *   - signerPubkey: Server's x-only public key (64 hex chars)

@@ -61,7 +61,7 @@ export const LightningModal: React.FC<LightningModalProps> = ({ onClose }) => {
 
           <div className="info-box">
             <p className="info-text">
-              ⚡ Pay Lightning Network invoices using your Ark VTXOs for instant settlement.
+              ⚡ Pay Lightning Network invoices using your Arkade VTXOs for instant settlement.
             </p>
             <p className="info-text">
               The invoice will be decoded and you'll be prompted to confirm the payment details.

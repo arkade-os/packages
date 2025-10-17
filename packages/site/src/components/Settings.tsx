@@ -121,7 +121,7 @@ export const Settings: React.FC = () => {
             </div>
           </div>
           <div className="setting-item">
-            <div className="setting-label">Ark Server</div>
+            <div className="setting-label">Arkade Server</div>
             <div className="setting-value">
               <code className="setting-code">{networkConfig.arkServerUrl}</code>
             </div>

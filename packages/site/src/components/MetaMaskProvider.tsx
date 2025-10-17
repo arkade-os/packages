@@ -228,7 +228,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       const compressedPublicKey = publicKeyResponse.compressedPublicKey;
 
-      // Get server info to build Ark address using RestArkProvider
+      // Get server info to build Arkade address using RestArkProvider
       const arkProvider = new RestArkProvider(networkConfig.arkServerUrl);
       const serverInfo = await arkProvider.getInfo();
 
@@ -247,7 +247,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         console.warn(`Server network (${serverNetwork}) doesn't match expected network (${networkConfig.networkName})`);
       }
 
-      // Get Ark address from snap with server timelock parameters
+      // Get Arkade address from snap with server timelock parameters
       const addressResponse = await window.ethereum.request({
         method: 'wallet_invokeSnap',
         params: {
@@ -264,7 +264,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       });
 
       if (!addressResponse || !addressResponse.address) {
-        throw new Error('Failed to get Ark address from snap');
+        throw new Error('Failed to get Arkade address from snap');
       }
 
       const snapArkAddress = addressResponse.address;
@@ -287,7 +287,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Get boarding address from SDK
       const boardingAddress = await arkWallet.getBoardingAddress();
 
-      // Use the snap-provided Ark address
+      // Use the snap-provided Arkade address
       const arkAddress = snapArkAddress;
 
       // Initialize Lightning (only if network supports it)

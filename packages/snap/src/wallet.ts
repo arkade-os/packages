@@ -95,7 +95,7 @@ export async function exportPrivateKey(): Promise<{ hex: string; nsec: string }>
  * Get Arkade address and public keys from snap's deterministic key derivation.
  * This ensures the same wallet address is always generated for the same MetaMask account.
  *
- * Note: We fetch server info to get the server info, then build the Ark address
+ * Note: We fetch server info to get the server info, then build the Arkade address
  * without creating a full wallet instance
  */
 export async function getAddress(params: unknown): Promise<{ address: ArkadeAddress; }> {
@@ -150,7 +150,7 @@ export async function getAddress(params: unknown): Promise<{ address: ArkadeAddr
   // Get the tweaked public key (taproot output key) from the vtxo script
   const taprootOutputKey = vtxoScript.tweakedPublicKey;
 
-  // Build Ark address using server pubkey and taproot output key
+  // Build Arkade address using server pubkey and taproot output key
   const arkadeAddress = new ArkAddress(
     serverPubKeyBytes,
     taprootOutputKey,

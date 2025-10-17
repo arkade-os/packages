@@ -41,7 +41,7 @@ export class MetaMaskSnapIdentity {
 
   /**
    * Get signer session for MuSig2 signing
-   * Required by Identity interface for collaborative signing with Ark server
+   * Required by Identity interface for collaborative signing with Arkade server
    *
    * Note: MuSig2 signing is not yet supported by MetaMask Snap.
    * This returns a stub that throws only if methods are called.

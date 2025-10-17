@@ -54,7 +54,7 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
           <div className="method-icon">⚡</div>
           <div className="method-info">
             <div className="method-name">Arkade</div>
-            <div className="method-description">Receive to your Ark or Boarding address</div>
+            <div className="method-description">Receive to your Arkade or Boarding address</div>
           </div>
         </button>
         {networkConfig.hasLightning && (
@@ -78,20 +78,20 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
       <div className="receive-address-section">
         <div className="receive-address-card">
           <div className="receive-address-header">
-            <span className="receive-address-label">⚡ Ark Address</span>
+            <span className="receive-address-label">⚡ Arkade Address</span>
             <span className="receive-address-badge">Instant</span>
           </div>
           <div className="receive-address-value">
-            <code>{formatAddress(walletInfo?.arkAddress)}</code>
+            <code>{formatAddress(walletInfo!.arkAddress)}</code>
           </div>
           <button
             className="btn btn-secondary btn-block"
-            onClick={() => copyToClipboard(walletInfo?.arkAddress)}
+            onClick={() => copyToClipboard(walletInfo!.arkAddress)}
           >
             📋 Copy Address
           </button>
           <p className="receive-address-description">
-            Use this address to receive instant off-chain Bitcoin via Ark VTXOs
+            Use this address to receive instant off-chain Bitcoin via Arkade VTXOs
           </p>
         </div>
 
@@ -101,11 +101,11 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
             <span className="receive-address-badge">On-chain</span>
           </div>
           <div className="receive-address-value">
-            <code>{formatAddress(walletInfo?.boardingAddress)}</code>
+            <code>{formatAddress(walletInfo!.boardingAddress)}</code>
           </div>
           <button
             className="btn btn-secondary btn-block"
-            onClick={() => copyToClipboard(walletInfo?.boardingAddress)}
+            onClick={() => copyToClipboard(walletInfo!.boardingAddress)}
           >
             📋 Copy Address
           </button>
@@ -245,7 +245,7 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
 
         <div className="modal-body">
           {method === null && renderMethodSelector()}
-          {method === 'arkade' && renderArkadeAddresses()}
+          {method === 'arkade' && walletInfo !== null && renderArkadeAddresses()}
           {method === 'lightning' && renderLightningForm()}
         </div>
       </div>

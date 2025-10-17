@@ -2,7 +2,7 @@
 
 ![Arkade Wallet](./packages/site/public/logo.png)
 
-A modern MetaMask Snap that brings Bitcoin, Lightning and Ark functionality to your browser. Built with [Arkade SDK](https://arkadeos.com) and [MetaMask Snaps](https://metamask.io/snaps/), this project demonstrates a **simplified provider pattern** where the Snap only handles Bitcoin signing operations, while all wallet logic runs in the frontend.
+A modern MetaMask Snap that brings Bitcoin, Lightning and Arkade functionality to your browser. Built with [Arkade SDK](https://arkadeos.com) and [MetaMask Snaps](https://metamask.io/snaps/), this project demonstrates a **simplified provider pattern** where the Snap only handles Bitcoin signing operations, while all wallet logic runs in the frontend.
 
 ## Architecture
 
@@ -126,7 +126,7 @@ const response = await ethereum.request({
 
 ### `arkade_getAddress`
 
-Get the Ark address for the current network and server configuration.
+Get the Arkade address for the current network and server configuration.
 
 ```typescript
 const response = await ethereum.request({
@@ -146,7 +146,7 @@ const response = await ethereum.request({
 
 // Returns:
 // {
-//   address: "ark1..."  // Ark address (bech32m encoded)
+//   address: "ark1..."  // Arkade address (bech32m encoded)
 // }
 ```
 
