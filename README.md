@@ -31,7 +31,6 @@ This project uses a **simplified provider pattern** where the Snap only handles 
 │  │  - arkade_getPublicKey()       │    │
 │  │  - arkade_getAddress()         │    │
 │  │  - arkade_signPsbt()           │    │
-│  │  - arkade_exportPrivateKey()   │    │
 │  └────────────────────────────────┘    │
 └─────────────────────────────────────────┘
 ```
@@ -175,29 +174,7 @@ const response = await ethereum.request({
 // }
 ```
 
-### `arkade_exportPrivateKey`
-
-Export the private key (requires user confirmation).
-
-**⚠️ WARNING**: This method shows a confirmation dialog and exposes the private key. Only use for backup/migration purposes.
-
-```typescript
-const response = await ethereum.request({
-  method: 'wallet_invokeSnap',
-  params: {
-    snapId: 'local:http://localhost:8080',
-    request: { method: 'arkade_exportPrivateKey' }
-  }
-});
-
-// Returns (after user confirms):
-// {
-//   hex: "...",   // Private key in hexadecimal format
-//   nsec: "nsec1..."  // Private key in Nostr format (bech32)
-// }
-```
-
-### Why These 4 Methods?
+### Why These 3 Methods?
 
 All wallet logic (balance, transactions, Lightning) runs in the **frontend** using the Arkade SDK with a `MetaMaskSnapIdentity` provider. The snap only handles sensitive key operations. This makes it:
 - ✅ **Simpler** - Easier to audit and maintain

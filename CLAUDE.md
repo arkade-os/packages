@@ -117,7 +117,6 @@ This snap uses a **minimal signing service** approach where the Snap only handle
 │  │  - arkade_getPublicKey()       │    │
 │  │  - arkade_getAddress()         │    │
 │  │  - arkade_signPsbt()           │    │
-│  │  - arkade_exportPrivateKey()   │    │
 │  └────────────────────────────────┘    │
 └─────────────────────────────────────────┘
 ```
@@ -133,7 +132,7 @@ This snap uses a **minimal signing service** approach where the Snap only handle
 packages/
 ├── snap/          # MetaMask Snap (Minimal signing service)
 │   ├── src/
-│   │   ├── index.ts      # RPC handlers (4 methods)
+│   │   ├── index.ts      # RPC handlers (3 methods)
 │   │   ├── wallet.ts     # Bitcoin key derivation & PSBT signing
 │   │   ├── utils.ts      # Parameter validation functions
 │   │   └── types.ts      # TypeScript type definitions
@@ -154,11 +153,10 @@ packages/
 ### Snap Architecture (packages/snap)
 
 **Entry Point: [index.ts](packages/snap/src/index.ts:1-54)**
-- Exports `onRpcRequest` handler with **4 RPC methods**:
+- Exports `onRpcRequest` handler with **3 RPC methods**:
   - `arkade_getPublicKey` - Get compressed and x-only public keys
   - `arkade_getAddress` - Get Ark address for network/server config
   - `arkade_signPsbt` - Sign a PSBT with the snap's key
-  - `arkade_exportPrivateKey` - Export private key (with user confirmation dialog)
 
 **Bitcoin Key Management: [wallet.ts](packages/snap/src/wallet.ts:1-234)**
 - `getPublicKey()` - Derives Bitcoin keys from MetaMask's entropy
@@ -171,18 +169,13 @@ packages/
 - `signPsbt()` - Signs PSBTs using the derived key
   - Accepts base64-encoded PSBT and input indexes to sign
   - Returns signed PSBT
-- `exportPrivateKey()` - Exports private key after user confirmation
-  - Shows critical warning dialog to user
-  - Returns private key in hex and nsec (Nostr) formats
 
 **Permission Requirements (snap.manifest.json):**
 - `snap_getEntropy` - Derive deterministic Bitcoin keys
-- `snap_dialog` - Show user confirmation dialogs (for private key export)
 - `endowment:rpc` - Accept RPC calls from dapps
 
 **Key Security Features:**
 - Keys derived on-demand from MetaMask entropy
-- Private key export requires explicit user confirmation via dialog
 - All signing operations happen within the snap sandbox
 
 ### Frontend Architecture (packages/site)
@@ -256,7 +249,7 @@ Uses Boltz swap protocol:
 
 ## RPC Methods
 
-The snap exposes **4 focused RPC methods** for Bitcoin key management and signing:
+The snap exposes **3 focused RPC methods** for Bitcoin key management and signing:
 
 ### `arkade_getPublicKey`
 
@@ -329,29 +322,7 @@ const response = await ethereum.request({
 // }
 ```
 
-### `arkade_exportPrivateKey`
-
-Export the private key (requires user confirmation).
-
-**⚠️ WARNING**: This method shows a confirmation dialog and exposes the private key. Only use for backup/migration purposes.
-
-```typescript
-const response = await ethereum.request({
-  method: 'wallet_invokeSnap',
-  params: {
-    snapId: 'local:http://localhost:8080',
-    request: { method: 'arkade_exportPrivateKey' }
-  }
-});
-
-// Returns (after user confirms):
-// {
-//   hex: "...",   // Private key in hexadecimal format
-//   nsec: "nsec1..."  // Private key in Nostr format (bech32)
-// }
-```
-
-### Why These 4 Methods?
+### Why These 3 Methods?
 
 All wallet operations (balance, transactions, Lightning) are handled by the **Arkade SDK running in the frontend** with a `MetaMaskSnapIdentity` provider. The snap only handles sensitive key operations.
 
@@ -409,26 +380,6 @@ lsof -ti:8080 | xargs kill -9
 7. Update MetaMaskProvider interface
 8. Use in React components via `useMetaMask()` hook
 
-### Showing User Dialogs (for private key export)
-```typescript
-const confirmed = await snap.request({
-  method: 'snap_dialog',
-  params: {
-    type: 'confirmation',  // or 'alert'
-    content: panel([
-      heading('⚠️ Export Private Key'),
-      text('**WARNING**: Your private key controls all your funds!'),
-      divider(),
-      text('Never share your private key with anyone.')
-    ])
-  }
-});
-
-if (!confirmed) {
-  throw new Error('User rejected operation');
-}
-```
-
 ### Adding a New Network
 To add a new network (e.g., testnet):
 1. Add network config to `NETWORK_CONFIGS` in [MetaMaskProvider.tsx:21-36](packages/site/src/components/MetaMaskProvider.tsx#L21-L36)
@@ -446,8 +397,7 @@ To add a new network (e.g., testnet):
 
 ## Important Notes
 
-- Private keys are NEVER exposed to the dapp - only the snap can access them (unless user explicitly exports via `arkade_exportPrivateKey`)
-- Private key export shows a critical warning dialog requiring explicit user confirmation
+- Private keys are NEVER exposed to the dapp - only the snap can access them
 - Snap runs in sandboxed environment isolated from web pages
 - Keys are derived deterministically from MetaMask entropy (no storage needed)
 - Network can be switched via `switchNetwork()` function in the UI

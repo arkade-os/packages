@@ -7,7 +7,7 @@
     "url": "https://github.com/yourusername/arkade-metamask-snap.git"
   },
   "source": {
-    "shasum": "fuhchYTnDlJiY2UKjoYp9NQriQv4ONIVgFLOaJP2ZFY=",
+    "shasum": "Ji3WQ4kDRPqELSUms1p3VSNp6Iaw3e69H1cMqtPpcS0=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -18,7 +18,6 @@
     }
   },
   "initialPermissions": {
-    "snap_dialog": {},
     "snap_manageState": {},
     "snap_getEntropy": {},
     "endowment:rpc": {
