@@ -99,7 +99,7 @@ export const SendModal: React.FC<SendModalProps> = ({ onClose }) => {
           id="recipient"
           type="text"
           className="form-input"
-          placeholder="Enter Ark or Bitcoin address"
+          placeholder="Enter Arkade or Bitcoin address"
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
         />
@@ -124,7 +124,7 @@ export const SendModal: React.FC<SendModalProps> = ({ onClose }) => {
 
       <div className="info-box">
         <p className="info-text">
-          ⚡ Transactions are sent via the Ark protocol for instant, low-fee settlement.
+          ⚡ Transactions are sent via Arkade L2 for instant, low-fee settlement.
         </p>
       </div>
     </>
@@ -150,7 +150,7 @@ export const SendModal: React.FC<SendModalProps> = ({ onClose }) => {
 
       <div className="info-box">
         <p className="info-text">
-          ⚡ Pay Lightning Network invoices using your Ark VTXOs for instant settlement.
+          ⚡ Pay Lightning Network invoices using your Arkade VTXOs for instant settlement.
         </p>
       </div>
     </>

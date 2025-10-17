@@ -5,7 +5,7 @@ import { ReceiveModal } from './ReceiveModal';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const { walletInfo, balance, transactions, loading, currentNetwork, getBalance, getTransactionHistory, onboardFunds } =
+  const { walletInfo, balance, transactions, loading, getBalance, getTransactionHistory, onboardFunds } =
     useMetaMask();
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -59,7 +59,7 @@ export const Dashboard: React.FC = () => {
       <div className="dashboard-header">
         <h1 className="dashboard-title">Your Arkade Wallet</h1>
         <div className="network-badge">
-          {currentNetwork === 'signet' ? 'SigNet' : 'Bitcoin'}
+          Bitcoin
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export const Dashboard: React.FC = () => {
       <div className="addresses-section">
         <div className="address-card">
           <div className="address-header">
-            <span className="address-label">Ark Address</span>
+            <span className="address-label">Arkade Address</span>
             <button
               className="copy-btn"
               onClick={() => copyToClipboard(walletInfo?.arkAddress || '')}

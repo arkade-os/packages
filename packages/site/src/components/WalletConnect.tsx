@@ -49,7 +49,7 @@ export const WalletConnect: React.FC = () => {
         <h1 className="connect-title gradient-text">Welcome to Arkade Wallet</h1>
         <p className="connect-description">
           Bitcoin Layer 2 wallet with Lightning Network support. Experience instant
-          off-chain transactions with the Ark protocol on Signet testnet.
+          off-chain transactions with Arkade L2.
         </p>
         <div className="features">
           <div className="feature">
@@ -137,7 +137,7 @@ export const WalletConnect: React.FC = () => {
 
         <div className="info-box">
           <p className="info-text">
-            ℹ️ This wallet uses <strong>Signet testnet</strong> for testing. You'll need MetaMask Flask installed.
+            ℹ️ This wallet requires MetaMask Flask to enable Bitcoin support.
           </p>
         </div>
       </div>

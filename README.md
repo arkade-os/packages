@@ -8,7 +8,7 @@ A modern MetaMask Snap that brings Bitcoin, Lightning and Ark functionality to y
 
 This project uses a **simplified provider pattern** where the Snap only handles Bitcoin signing operations, while all wallet logic runs in the frontend:
 
-- **`packages/snap`** - Minimal MetaMask Snap that provides Bitcoin key management and PSBT signing (only ~97 lines of code!)
+- **`packages/snap`** - Minimal MetaMask Snap that provides Bitcoin key management and PSBT signing
 - **`packages/site`** - React dapp that runs Arkade SDK directly using MetaMaskSnapIdentity provider
 
 ### How It Works
@@ -28,17 +28,13 @@ This project uses a **simplified provider pattern** where the Snap only handles 
 │             ▼                            │
 │  ┌────────────────────────────────┐    │
 │  │ MetaMask Snap                  │    │
-│  │  - bitcoin_getAccounts()       │    │
-│  │  - bitcoin_signPsbt()          │    │
+│  │  - arkade_getPublicKey()       │    │
+│  │  - arkade_getAddress()         │    │
+│  │  - arkade_signPsbt()           │    │
+│  │  - arkade_exportPrivateKey()   │    │
 │  └────────────────────────────────┘    │
 └─────────────────────────────────────────┘
 ```
-
-**Benefits:**
-- ✅ Simpler snap code (easier to audit)
-- ✅ Faster development (no snap rebuild for wallet changes)
-- ✅ Better UX (all data fetching in dapp)
-- ✅ Follows security best practices (snap only handles sensitive operations)
 
 ## Prerequisites
 
@@ -106,31 +102,56 @@ This will:
 
 ## Snap RPC Methods
 
-The Arkade Wallet Snap is **minimal by design** and only exposes 2 RPC methods for Bitcoin signing:
+The Arkade Wallet Snap is **minimal by design** and exposes 4 focused RPC methods for Bitcoin key management and signing:
 
-### `bitcoin_getAccounts`
-Get Bitcoin account information (address and public keys).
+### `arkade_getPublicKey`
+
+Get the snap's public keys (compressed and x-only formats).
 
 ```typescript
 const response = await ethereum.request({
   method: 'wallet_invokeSnap',
   params: {
     snapId: 'local:http://localhost:8080',
-    request: { method: 'bitcoin_getAccounts' }
+    request: { method: 'arkade_getPublicKey' }
   }
 });
 
 // Returns:
 // {
-//   accounts: [{
-//     address: "tb1p...",        // Bitcoin taproot address
-//     publicKey: "02...",          // Full public key (33 bytes)
-//     xOnlyPublicKey: "..."        // x-only public key (32 bytes)
-//   }]
+//   compressedPublicKey: "02...",  // Compressed public key (33 bytes hex)
+//   xOnlyPublicKey: "..."           // x-only public key (32 bytes hex)
 // }
 ```
 
-### `bitcoin_signPsbt`
+### `arkade_getAddress`
+
+Get the Ark address for the current network and server configuration.
+
+```typescript
+const response = await ethereum.request({
+  method: 'wallet_invokeSnap',
+  params: {
+    snapId: 'local:http://localhost:8080',
+    request: {
+      method: 'arkade_getAddress',
+      params: {
+        network: 'bitcoin',              // 'bitcoin' | 'testnet' | 'signet' | 'mutinynet' | 'regtest'
+        signerPubkey: '...',             // Server's x-only public key (64 hex chars)
+        unilateralExitDelay: '512'       // CSV timelock value from server
+      }
+    }
+  }
+});
+
+// Returns:
+// {
+//   address: "ark1..."  // Ark address (bech32m encoded)
+// }
+```
+
+### `arkade_signPsbt`
+
 Sign a Partially Signed Bitcoin Transaction (PSBT).
 
 ```typescript
@@ -139,10 +160,10 @@ const response = await ethereum.request({
   params: {
     snapId: 'local:http://localhost:8080',
     request: {
-      method: 'bitcoin_signPsbt',
+      method: 'arkade_signPsbt',
       params: {
-        psbt: 'cHNidP8B...', // Base64-encoded PSBT
-        inputIndexes: [0, 1]  // Indexes of inputs to sign
+        psbt: 'cHNidP8B...',       // Base64-encoded PSBT
+        inputIndexes: [0, 1]        // Indexes of inputs to sign
       }
     }
   }
@@ -154,15 +175,35 @@ const response = await ethereum.request({
 // }
 ```
 
-### Why Only 2 Methods?
+### `arkade_exportPrivateKey`
 
-All wallet logic (balance, transactions, Lightning) runs in the **frontend** using the Arkade SDK with a `MetaMaskSnapIdentity` provider. This makes the snap:
+Export the private key (requires user confirmation).
+
+**⚠️ WARNING**: This method shows a confirmation dialog and exposes the private key. Only use for backup/migration purposes.
+
+```typescript
+const response = await ethereum.request({
+  method: 'wallet_invokeSnap',
+  params: {
+    snapId: 'local:http://localhost:8080',
+    request: { method: 'arkade_exportPrivateKey' }
+  }
+});
+
+// Returns (after user confirms):
+// {
+//   hex: "...",   // Private key in hexadecimal format
+//   nsec: "nsec1..."  // Private key in Nostr format (bech32)
+// }
+```
+
+### Why These 4 Methods?
+
+All wallet logic (balance, transactions, Lightning) runs in the **frontend** using the Arkade SDK with a `MetaMaskSnapIdentity` provider. The snap only handles sensitive key operations. This makes it:
 - ✅ **Simpler** - Easier to audit and maintain
-- ✅ **More secure** - Minimal attack surface
+- ✅ **More secure** - Minimal attack surface, keys never leave the snap
 - ✅ **Faster** - No RPC overhead for data queries
 - ✅ **More flexible** - Update wallet logic without snap rebuild
-
-The frontend uses the snap only for signing operations, keeping private keys secure in MetaMask.
 
 ## Project Structure
 

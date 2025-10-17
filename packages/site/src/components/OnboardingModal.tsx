@@ -77,8 +77,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose, board
                 <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--gray-700)', lineHeight: '1.6' }}>
                   <li>Your on-chain Bitcoin will be converted to VTXOs</li>
                   <li>VTXOs enable instant, off-chain transactions</li>
-                  <li>Once finalized, you can send Bitcoin instantly</li>
-                  <li>This process completes in the next Ark round</li>
                 </ul>
               </div>
 
