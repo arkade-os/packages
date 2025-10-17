@@ -7,12 +7,12 @@
     "url": "https://github.com/arkade-os/metamask-snap.git"
   },
   "source": {
-    "shasum": "YTXbfqPu0+Bw/pGy5WuLDGTN1FjAF8OiZqaNLICwPHc=",
+    "shasum": "/pkyR1clmYXxZdoD8qcwOQUj8k16l40QoJW8vtVxXkE=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
         "iconPath": "images/icon.svg",
-        "packageName": "arkade-snap",
+        "packageName": "@arkade-os/arkade-snap",
         "registry": "https://registry.npmjs.org/"
       }
     }
