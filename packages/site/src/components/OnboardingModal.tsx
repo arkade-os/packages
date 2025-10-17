@@ -14,8 +14,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose, board
   const [success, setSuccess] = useState(false);
   const [txid, setTxid] = useState<string | null>(null);
 
-  const formatBTC = (amount: number) => {
-    return (amount / 100000000).toFixed(8);
+  const formatSats = (amount: number | bigint) => {
+    return BigInt(amount).toLocaleString();
   };
 
   const handleOnboard = async () => {
@@ -64,7 +64,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose, board
                       Boarding Balance
                     </div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--purple-dark)' }}>
-                      {formatBTC(boardingAmount)} BTC
+                      {formatSats(boardingAmount)} sats
                     </div>
                   </div>
                 </div>

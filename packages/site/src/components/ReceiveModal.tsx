@@ -19,13 +19,13 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
   const handleCreateInvoice = async () => {
     setError(null);
 
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!amount || parseInt(amount) <= 0) {
       setError('Please enter a valid amount');
       return;
     }
 
     try {
-      const amountSats = Math.floor(parseFloat(amount) * 100000000);
+      const amountSats = parseInt(amount);
       const result = await createLightningInvoice(amountSats, description || 'Arkade wallet payment');
       setGeneratedInvoice(result);
     } catch (err: any) {
@@ -178,14 +178,14 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ onClose }) => {
       <>
         <div className="form-group">
           <label htmlFor="amount" className="form-label">
-            Amount (BTC)
+            Amount (sats)
           </label>
           <input
             id="amount"
             type="number"
-            step="0.00000001"
+            step="1"
             className="form-input"
-            placeholder="0.00000000"
+            placeholder="1000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />

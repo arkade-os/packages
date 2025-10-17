@@ -44,9 +44,27 @@ export class MetaMaskSnapIdentity {
    * Required by Identity interface for collaborative signing with Ark server
    *
    * Note: MuSig2 signing is not yet supported by MetaMask Snap.
+   * This returns a stub that throws only if methods are called.
+   * VHTLC claiming should not need this - it only uses sign() method.
    */
   signerSession(): SignerSession {
-    throw new Error('MuSig2 signing sessions are not yet supported by MetaMask Snap');
+    return {
+      async getPublicKey(): Promise<Uint8Array> {
+        throw new Error('MuSig2 getPublicKey is not supported by MetaMask Snap');
+      },
+      async init(): Promise<void> {
+        throw new Error('MuSig2 init is not supported by MetaMask Snap');
+      },
+      async getNonces(): Promise<any> {
+        throw new Error('MuSig2 getNonces is not supported by MetaMask Snap');
+      },
+      async aggregatedNonces(): Promise<{ hasAllNonces: boolean }> {
+        throw new Error('MuSig2 aggregatedNonces is not supported by MetaMask Snap');
+      },
+      async sign(): Promise<any> {
+        throw new Error('MuSig2 sign is not supported by MetaMask Snap');
+      }
+    };
   }
 
   /**

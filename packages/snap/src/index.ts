@@ -13,9 +13,10 @@ import { getAddress, getPublicKey, exportPrivateKey, signPsbt } from './wallet';
  *   Returns: { hex: string, nsec: string }
  *   WARNING: Shows confirmation dialog to user before exposing private key
  * - arkade_getAddress: Get the Bitcoin Ark address
- *   Params: { network: NetworkName, signerPubkey: string }
+ *   Params: { network: NetworkName, signerPubkey: string, unilateralExitDelay: string }
  *   - network: 'bitcoin' | 'testnet' | 'signet' | 'mutinynet' | 'regtest'
- *   - signerPubkey: Server's public key (64 hex chars for x-only, 66 for compressed)
+ *   - signerPubkey: Server's x-only public key (64 hex chars)
+ *   - unilateralExitDelay: CSV timelock value from server (string representation of bigint)
  *   Returns: { address: string }
  * - arkade_signPsbt: Sign a PSBT with the snap's key
  *   Params: { psbt: string, inputIndexes: number[] }

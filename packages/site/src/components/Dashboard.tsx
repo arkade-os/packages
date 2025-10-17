@@ -32,8 +32,8 @@ export const Dashboard: React.FC = () => {
     return `${address.slice(0, 8)}...${address.slice(-8)}`;
   };
 
-  const formatBTC = (amount: number) => {
-    return (amount / 100000000).toFixed(8);
+  const formatSats = (amount: number | bigint) => {
+    return BigInt(amount).toLocaleString();
   };
 
   const copyToClipboard = (text: string) => {
@@ -70,11 +70,11 @@ export const Dashboard: React.FC = () => {
           {loading && <span className="loading-spinner animate-pulse">↻</span>}
         </div>
         <div className="balance-amount">
-          {balance ? formatBTC(balance.offchain) : '0.00000000'} BTC
+          {balance ? formatSats(balance.offchain) : '0'} sats
         </div>
         {balance && balance.onchain > 0 && (
           <div className="balance-pending">
-            {formatBTC(balance.onchain)} BTC pending
+            {formatSats(balance.onchain)} sats pending
           </div>
         )}
       </div>
@@ -158,7 +158,7 @@ export const Dashboard: React.FC = () => {
                 <div className="transaction-amount">
                   <span className={tx.type === 'send' ? 'amount-negative' : 'amount-positive'}>
                     {tx.type === 'send' ? '-' : '+'}
-                    {formatBTC(tx.amount)} BTC
+                    {formatSats(tx.amount)} sats
                   </span>
                 </div>
                 {tx.layer === 'onchain' && tx.type === 'receive' && (

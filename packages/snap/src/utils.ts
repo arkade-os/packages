@@ -1,4 +1,5 @@
 import { NetworkName } from "@arkade-os/sdk";
+import { XOnlyPubKeyHex } from "./types";
 
 /**
  * Validation utilities
@@ -23,7 +24,7 @@ function validateNetwork(network: unknown): NetworkName {
   return network;
 }
 
-function validateSignerPubkey(signerPubkey: unknown): string {
+function validateSignerPubkey(signerPubkey: unknown): XOnlyPubKeyHex {
   if (typeof signerPubkey !== 'string') {
     throw new Error(`Invalid signerPubkey type: expected string, got ${typeof signerPubkey}`);
   }
@@ -33,10 +34,9 @@ function validateSignerPubkey(signerPubkey: unknown): string {
   if (!isValidHex(signerPubkey)) {
     throw new Error(`Invalid signerPubkey: must be a valid hex string`);
   }
-  // x-only pubkey should be 32 bytes = 64 hex chars
-  // compressed pubkey should be 33 bytes = 66 hex chars
-  if (signerPubkey.length !== 64 && signerPubkey.length !== 66) {
-    throw new Error(`Invalid signerPubkey length: expected 64 (x-only) or 66 (compressed) hex characters, got ${signerPubkey.length}`);
+  // Must be x-only pubkey (32 bytes = 64 hex chars)
+  if (signerPubkey.length !== 64) {
+    throw new Error(`Invalid signerPubkey length: expected 64 hex characters (x-only public key), got ${signerPubkey.length}`);
   }
   return signerPubkey;
 }
@@ -77,11 +77,31 @@ function validateInputIndexes(inputIndexes: unknown): number[] {
   return inputIndexes;
 }
 
+function validateUnilateralExitDelay(delay: unknown): bigint {
+  if (typeof delay !== 'string' && typeof delay !== 'number' && typeof delay !== 'bigint') {
+    throw new Error(`Invalid unilateralExitDelay type: expected string, number, or bigint, got ${typeof delay}`);
+  }
+
+  let delayBigInt: bigint;
+  try {
+    delayBigInt = BigInt(delay);
+  } catch (error) {
+    throw new Error(`Invalid unilateralExitDelay: ${delay} is not a valid number`);
+  }
+
+  if (delayBigInt < 0n) {
+    throw new Error(`Invalid unilateralExitDelay: must be non-negative, got ${delayBigInt}`);
+  }
+
+  return delayBigInt;
+}
+
 export {
   validateInputIndexes,
   validateNetwork,
   validatePsbt,
   validateSignerPubkey,
+  validateUnilateralExitDelay,
   isValidHex,
   isValidNetwork,
 }

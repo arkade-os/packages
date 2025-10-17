@@ -1,7 +1,7 @@
 import { base64, hex, bech32 } from '@scure/base';
 import { panel, heading, text, divider } from '@metamask/snaps-sdk';
-import { Transaction, SingleKey, ArkAddress, NetworkName } from '@arkade-os/sdk';
-import { validateInputIndexes, validateNetwork, validatePsbt, validateSignerPubkey } from './utils';
+import { Transaction, SingleKey, ArkAddress, NetworkName, DefaultVtxo } from '@arkade-os/sdk';
+import { validateInputIndexes, validateNetwork, validatePsbt, validateSignerPubkey, validateUnilateralExitDelay } from './utils';
 import { ArkadeAddress, PubKeyHex, XOnlyPubKeyHex } from './types';
 
 
@@ -104,15 +104,20 @@ export async function getAddress(params: unknown): Promise<{ address: ArkadeAddr
     throw new Error('Invalid params: expected object');
   }
 
-  const { network, signerPubkey } = params as { network: unknown; signerPubkey: unknown };
+  const { network, signerPubkey, unilateralExitDelay } = params as {
+    network: unknown;
+    signerPubkey: unknown;
+    unilateralExitDelay: unknown;
+  };
 
   // Validate individual parameters
   const validatedNetwork = validateNetwork(network);
   const validatedSignerPubkey = validateSignerPubkey(signerPubkey);
+  const validatedExitDelay = validateUnilateralExitDelay(unilateralExitDelay);
 
   const serverPubKeyBytes = hex.decode(validatedSignerPubkey);
   const prefix = validatedNetwork === 'bitcoin' ? 'ark' : 'tark';
-  
+
   const entropy = await snap.request({
     method: 'snap_getEntropy',
     params: {
@@ -126,11 +131,29 @@ export async function getAddress(params: unknown): Promise<{ address: ArkadeAddr
 
   // Create identity from private key
   const identity = SingleKey.fromHex(privateKeyHex);
-  const xOnlyPublicKeyBytes = await identity.xOnlyPublicKey()
-  
+  const xOnlyPublicKeyBytes = await identity.xOnlyPublicKey();
+
+  // Create the default vtxo script to get the taproot output key
+  // The vtxo script contains forfeit (user + server) and exit (user after timelock) paths
+  // Use the server's unilateral exit delay to match the official wallet
+  const csvTimelock = {
+    value: validatedExitDelay,
+    type: validatedExitDelay < 512n ? "blocks" : "seconds",
+  } as const;
+
+  const vtxoScript = new DefaultVtxo.Script({
+    pubKey: xOnlyPublicKeyBytes,
+    serverPubKey: serverPubKeyBytes,
+    csvTimelock,
+  });
+
+  // Get the tweaked public key (taproot output key) from the vtxo script
+  const taprootOutputKey = vtxoScript.tweakedPublicKey;
+
+  // Build Ark address using server pubkey and taproot output key
   const arkadeAddress = new ArkAddress(
     serverPubKeyBytes,
-    xOnlyPublicKeyBytes,
+    taprootOutputKey,
     prefix,
   );
 

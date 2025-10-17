@@ -231,7 +231,15 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Get server info to build Ark address using RestArkProvider
       const arkProvider = new RestArkProvider(networkConfig.arkServerUrl);
       const serverInfo = await arkProvider.getInfo();
-      const signerPubkey = serverInfo.signerPubkey.slice(2);
+
+      // Convert server's signer pubkey to x-only format (32 bytes = 64 hex chars)
+      // Server returns compressed pubkey with 0x prefix (0x + 66 chars)
+      let signerPubkey = serverInfo.signerPubkey.slice(2); // Remove 0x prefix
+      if (signerPubkey.length === 66) {
+        // Compressed pubkey: remove first byte (02 or 03 prefix) to get x-only
+        signerPubkey = signerPubkey.slice(2);
+      }
+
       const serverNetwork = serverInfo.network;
 
       // Verify network matches
@@ -239,7 +247,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         console.warn(`Server network (${serverNetwork}) doesn't match expected network (${networkConfig.networkName})`);
       }
 
-      // Get Ark address from snap
+      // Get Ark address from snap with server timelock parameters
       const addressResponse = await window.ethereum.request({
         method: 'wallet_invokeSnap',
         params: {
@@ -249,6 +257,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
             params: {
               network: networkConfig.networkName,
               signerPubkey,
+              unilateralExitDelay: serverInfo.unilateralExitDelay.toString(),
             },
           },
         },
@@ -404,16 +413,37 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const history = await wallet.getTransactionHistory();
 
+      console.log('[MetaMaskProvider] Raw transaction history:', JSON.stringify(history, (_, v) =>
+        typeof v === 'bigint' ? v.toString() : v, 2
+      ));
+
       // Transform to our format
       const txs: Transaction[] = history.map((tx: any) => {
         const txid = tx.key?.arkTxid || tx.key?.commitmentTxid || tx.key?.boardingTxid || 'unknown';
-        const type = tx.type === 'SEND' || tx.type === 1 ? 'send' : 'receive';
+
+        // Check multiple possible formats for transaction type
+        let type: 'send' | 'receive' = 'receive';
+        const typeStr = tx.type?.toString().toUpperCase() || '';
+        if (typeStr === 'SEND' || typeStr === 'SENT' || tx.type === 1) {
+          type = 'send';
+        } else if (typeStr === 'RECEIVE' || typeStr === 'RECEIVED' || tx.type === 0) {
+          type = 'receive';
+        }
+
         const hasArkTxid = tx.key?.arkTxid && tx.key.arkTxid !== 'unknown';
         const hasBoardingTxid = tx.key?.boardingTxid && tx.key.boardingTxid !== 'unknown';
         const layer = hasArkTxid ? 'offchain' : hasBoardingTxid ? 'onchain' : 'offchain';
         const amount = typeof tx.amount === 'bigint' ? Number(tx.amount) : Number(tx.amount || 0);
         const timestamp = typeof tx.createdAt === 'bigint' ? Number(tx.createdAt) : tx.createdAt || Date.now();
         const status = tx.settled ? 'settled' : 'preconfirmed';
+
+        console.log('[MetaMaskProvider] Processing tx:', {
+          rawType: tx.type,
+          determinedType: type,
+          txid,
+          amount,
+          layer,
+        });
 
         return {
           txid,
@@ -425,6 +455,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         };
       });
 
+      console.log('[MetaMaskProvider] Processed transactions:', txs);
       setTransactions(txs);
     } catch (error) {
       console.error('Failed to get transaction history:', error);
