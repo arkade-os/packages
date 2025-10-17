@@ -1,0 +1,32 @@
+# Source files
+src/
+*.test.ts
+*.test.js
+
+# Config files
+tsconfig.json
+.eslintrc.js
+.eslintrc.json
+.prettierrc
+.prettierrc.json
+
+# Development files
+.cache/
+node_modules/
+coverage/
+
+# Documentation (use README from npm package)
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Build artifacts (except dist which we need)
+*.log
+*.lock

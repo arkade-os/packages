@@ -5,9 +5,23 @@
   "main": "./dist/bundle.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/arkade-metamask-snap.git"
+    "url": "https://github.com/arkade-os/metamask-snap.git"
   },
   "license": "MIT",
+  "keywords": [
+    "metamask",
+    "snap",
+    "bitcoin",
+    "arkade",
+    "layer2",
+    "lightning",
+    "vtxo"
+  ],
+  "files": [
+    "dist/",
+    "images/",
+    "snap.manifest.json"
+  ],
   "scripts": {
     "build": "mm-snap build",
     "build:clean": "pnpm clean && pnpm build",
