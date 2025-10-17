@@ -1,24 +1,50 @@
 import type { OnRpcRequestHandler } from '@metamask/snaps-sdk';
-import { getBitcoinAccounts, signPsbt } from './wallet';
+import { getAddress, getPublicKey, exportPrivateKey, signPsbt } from './wallet';
 
 /**
  * Handle incoming JSON-RPC requests from dapps.
  *
  * This snap provides a simple Bitcoin signing interface:
- * - bitcoin_getAccounts: Get the Bitcoin taproot address and public keys
- * - bitcoin_signPsbt: Sign a PSBT with the snap's key
+ * - arkade_getPublicKey: Get the snap's public keys
+ *   No params required
+ *   Returns: { compressedPublicKey: string, xOnlyPublicKey: string }
+ * - arkade_exportPrivateKey: Export private key (WITH USER CONFIRMATION!)
+ *   No params required
+ *   Returns: { hex: string, nsec: string }
+ *   WARNING: Shows confirmation dialog to user before exposing private key
+ * - arkade_getAddress: Get the Bitcoin Ark address
+ *   Params: { network: NetworkName, signerPubkey: string }
+ *   - network: 'bitcoin' | 'testnet' | 'signet' | 'mutinynet' | 'regtest'
+ *   - signerPubkey: Server's public key (64 hex chars for x-only, 66 for compressed)
+ *   Returns: { address: string }
+ * - arkade_signPsbt: Sign a PSBT with the snap's key
+ *   Params: { psbt: string, inputIndexes: number[] }
+ *   - psbt: Base64-encoded PSBT
+ *   - inputIndexes: Array of input indexes to sign (non-negative integers)
+ *   Returns: { psbt: string }
  *
  * All wallet logic (balance, transactions, Lightning) runs in the dapp using Arkade SDK.
+ * All parameters are validated inside the handler functions.
  */
 export const onRpcRequest: OnRpcRequestHandler = async ({ origin, request }) => {
   console.log('Received request:', request.method, 'from:', origin);
 
   switch (request.method) {
-    case 'bitcoin_getAccounts':
-      return await getBitcoinAccounts();
+    case 'arkade_getPublicKey':
+      // No params required
+      return await getPublicKey();
 
-    case 'bitcoin_signPsbt':
-      return await signPsbt(request.params as { psbt: string; inputIndexes: number[] });
+    case 'arkade_exportPrivateKey':
+      // No params required - shows confirmation dialog
+      return await exportPrivateKey();
+
+    case 'arkade_getAddress':
+      // Params validated inside getAddress
+      return await getAddress(request.params);
+
+    case 'arkade_signPsbt':
+      // Params validated inside signPsbt
+      return await signPsbt(request.params);
 
     default:
       throw new Error(`Method not found: ${request.method}`);

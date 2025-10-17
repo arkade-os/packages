@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Wallet, Ramps, type NetworkName } from '@arkade-os/sdk';
+import { Wallet, Ramps, RestArkProvider, type NetworkName } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
@@ -11,10 +11,10 @@ export type SupportedNetwork = 'bitcoin' | 'signet';
 
 // Network configurations
 export interface NetworkConfig {
+  networkName: NetworkName;
   arkServerUrl: string;
   esploraUrl: string;
   boltzUrl?: string;
-  networkName: NetworkName;
   hasLightning: boolean;
 }
 
@@ -213,40 +213,73 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Wait a bit for snap to be ready
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Get accounts from snap
-      const accountResponse = await window.ethereum.request({
+      // Get public keys from snap
+      const publicKeyResponse = await window.ethereum.request({
         method: 'wallet_invokeSnap',
         params: {
           snapId: SNAP_ID,
-          request: { method: 'bitcoin_getAccounts' },
+          request: { method: 'arkade_getPublicKey' },
         },
       });
 
-      if (!accountResponse || !accountResponse.accounts || accountResponse.accounts.length === 0) {
-        throw new Error('No accounts found in snap');
+      if (!publicKeyResponse || !publicKeyResponse.compressedPublicKey || !publicKeyResponse.xOnlyPublicKey) {
+        throw new Error('Failed to get public keys from snap');
       }
 
-      const account = accountResponse.accounts[0];
-      const address = account.address;
-      const publicKey = account.publicKey;
+      const compressedPublicKey = publicKeyResponse.compressedPublicKey;
+
+      // Get server info to build Ark address using RestArkProvider
+      const arkProvider = new RestArkProvider(networkConfig.arkServerUrl);
+      const serverInfo = await arkProvider.getInfo();
+      const signerPubkey = serverInfo.signerPubkey.slice(2);
+      const serverNetwork = serverInfo.network;
+
+      // Verify network matches
+      if (serverNetwork !== networkConfig.networkName) {
+        console.warn(`Server network (${serverNetwork}) doesn't match expected network (${networkConfig.networkName})`);
+      }
+
+      // Get Ark address from snap
+      const addressResponse = await window.ethereum.request({
+        method: 'wallet_invokeSnap',
+        params: {
+          snapId: SNAP_ID,
+          request: {
+            method: 'arkade_getAddress',
+            params: {
+              network: networkConfig.networkName,
+              signerPubkey,
+            },
+          },
+        },
+      });
+
+      if (!addressResponse || !addressResponse.address) {
+        throw new Error('Failed to get Ark address from snap');
+      }
+
+      const snapArkAddress = addressResponse.address;
 
       // Create MetaMaskSnapIdentity
       const identity = new MetaMaskSnapIdentity(
-        publicKey,
-        address,
+        compressedPublicKey,
+        snapArkAddress,
         window.ethereum
       );
 
       // Create Arkade Wallet
+      console.log(networkConfig.arkServerUrl, networkConfig.esploraUrl)
       const arkWallet = await Wallet.create({
         identity,
         arkServerUrl: networkConfig.arkServerUrl,
         esploraUrl: networkConfig.esploraUrl,
       });
 
-      // Get Ark addresses
-      const arkAddress = await arkWallet.getAddress();
+      // Get boarding address from SDK
       const boardingAddress = await arkWallet.getBoardingAddress();
+
+      // Use the snap-provided Ark address
+      const arkAddress = snapArkAddress;
 
       // Initialize Lightning (only if network supports it)
       let arkLightning: ArkadeLightning | null = null;
@@ -294,6 +327,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
     const detectAndAutoConnect = async () => {
       try {
         const status = await detectMetaMaskStatus();
+        console.log(status)
         setMetaMaskStatus(status);
 
         // Only attempt auto-connect if Flask is ready
@@ -440,7 +474,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       try {
         setLoading(true);
-        const result = await lightning.sendLightningPayment({ invoice, maxFeeSats });
+        const result = await lightning.sendLightningPayment({ invoice });
 
         // Refresh balance and history
         await getBalance();
@@ -474,7 +508,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
         });
 
         // Start monitoring for payment
-        lightning.waitAndClaim(result.pendingSwap as { id: string; amount: number; expiry: number; status: string }).then(() => {
+        lightning.waitAndClaim(result.pendingSwap).then(() => {
           console.log('Lightning payment received and claimed');
           getBalance();
           getTransactionHistory();

@@ -14,8 +14,9 @@ export class MetaMaskSnapIdentity {
   ethereum: any;
   snapId: string;
 
-  constructor(publicKey: string | Uint8Array, address: string, ethereum: any) {
-    this.publicKey = typeof publicKey === 'string' ? hex.decode(publicKey) : publicKey;
+  constructor(publicKeyHex: string, address: string, ethereum: any) {
+    if (publicKeyHex.length !== 66) throw new Error('compressed public key must be 33-bytes ')
+    this.publicKey =  hex.decode(publicKeyHex);
     this.address = address;
     this.ethereum = ethereum;
     this.snapId = 'local:http://localhost:8080';
@@ -27,7 +28,7 @@ export class MetaMaskSnapIdentity {
    */
   async xOnlyPublicKey(): Promise<Uint8Array> {
     const fullPubkey = this.publicKey;
-    return fullPubkey.length === 33 ? fullPubkey.slice(1) : fullPubkey;
+    return fullPubkey.slice(1);
   }
 
   /**
@@ -80,15 +81,15 @@ export class MetaMaskSnapIdentity {
    */
   async isConnected(): Promise<boolean> {
     try {
-      const accounts = await this.ethereum.request({
+      const response = await this.ethereum.request({
         method: 'wallet_invokeSnap',
         params: {
           snapId: this.snapId,
-          request: { method: 'bitcoin_getAccounts' },
+          request: { method: 'arkade_getPublicKey' },
         },
       });
 
-      return accounts && accounts.accounts && accounts.accounts.length > 0;
+      return Boolean(response && response.compressedPublicKey && response.xOnlyPublicKey);
     } catch (error) {
       console.error('Connection check failed:', error);
       return false;
@@ -159,7 +160,7 @@ export class MetaMaskSnapIdentity {
         params: {
           snapId: this.snapId,
           request: {
-            method: 'bitcoin_signPsbt',
+            method: 'arkade_signPsbt',
             params: requestParams,
           },
         },

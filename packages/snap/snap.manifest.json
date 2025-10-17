@@ -7,7 +7,7 @@
     "url": "https://github.com/yourusername/arkade-metamask-snap.git"
   },
   "source": {
-    "shasum": "/hpiWO2SPx50XgwsM/NYGZtj79C7UrpdAPA3p9z9nR8=",
+    "shasum": "lNYp7Bui0oIJDbyIVya28AK7R2c1SIcOT6wztXLrgpg=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
