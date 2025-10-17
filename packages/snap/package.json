@@ -5,7 +5,7 @@
   "main": "./dist/bundle.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/metamask-snap.git"
+    "url": "https://github.com/arkade-os/arkade-snap.git"
   },
   "license": "MIT",
   "keywords": [
@@ -20,7 +20,8 @@
   "files": [
     "dist/",
     "images/",
-    "snap.manifest.json"
+    "snap.manifest.json",
+    "README.md"
   ],
   "scripts": {
     "build": "mm-snap build",

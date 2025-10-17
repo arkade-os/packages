@@ -101,7 +101,7 @@ This will:
 
 ## Snap RPC Methods
 
-The Arkade Wallet Snap is **minimal by design** and exposes 4 focused RPC methods for Bitcoin key management and signing:
+The Arkade Wallet Snap is **minimal by design** and exposes 3 focused RPC methods for Bitcoin key management and signing:
 
 ### `arkade_getPublicKey`
 

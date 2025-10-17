@@ -4,10 +4,10 @@
   "proposedName": "Arkade Wallet",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/metamask-snap.git"
+    "url": "https://github.com/arkade-os/arkade-snap.git"
   },
   "source": {
-    "shasum": "/pkyR1clmYXxZdoD8qcwOQUj8k16l40QoJW8vtVxXkE=",
+    "shasum": "dZWf+2uCE7U7umYbDUmes4woxciTmN+fZZSa6NiK+Y8=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
