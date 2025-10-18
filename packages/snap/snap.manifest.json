@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Arkade Wallet Snap - Bitcoin Layer 2 wallet with Lightning Network support",
   "proposedName": "Arkade Wallet",
   "repository": {
@@ -7,7 +7,7 @@
     "url": "https://github.com/arkade-os/snap.git"
   },
   "source": {
-    "shasum": "wPZoQk0ySB5RU4L7miJpq+2vUJCWyw9W2E8mzLMR8uU=",
+    "shasum": "YluBYQk/zIftTCKLAA6b/gFfXG+8XwSKkNUu69tmupU=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
