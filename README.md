@@ -240,6 +240,56 @@ The app uses a modern purple color scheme inspired by the Arkade brand:
 - **pnpm** - Fast, disk space efficient package manager
 
 
+## Release Process
+
+To publish a new version of the snap to npm:
+
+### 1. Bump Version
+
+```bash
+# Navigate to the snap package
+cd packages/snap
+
+# Bump version (patch, minor, or major)
+npm version patch  # or minor/major
+```
+
+### 2. Rebuild Snap
+
+After bumping the version, you must rebuild the snap to update the `snap.manifest.json` with the new version and shasum:
+
+```bash
+pnpm run build
+```
+
+This command will automatically:
+
+- Update the version in `snap.manifest.json` to match `package.json`
+- Regenerate the shasum for the new bundle
+
+### 3. Commit Changes
+
+```bash
+git add .
+git commit -m "chore: bump version to x.x.x"
+git push
+```
+
+### 4. Publish to npm
+
+```bash
+# Make sure you're logged in to npm
+npm whoami
+
+# Publish the package
+npm publish
+```
+
+### Common Issues
+
+- **Shasum mismatch error**: Always run `pnpm run build` after changing the version number
+- **Version mismatch**: The build command automatically syncs versions between `package.json` and `snap.manifest.json`
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
