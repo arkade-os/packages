@@ -5,7 +5,7 @@
   "description": "Arkade Wallet MetaMask Snap - Bitcoin Layer 2 wallet with Lightning support",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/arkade-snap.git"
+    "url": "https://github.com/arkade-os/snap.git"
   },
   "license": "MIT",
   "workspaces": [

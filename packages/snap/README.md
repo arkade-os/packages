@@ -160,7 +160,7 @@ const balance = await wallet.getBalance();
 const address = await wallet.getAddress();
 ```
 
-For a complete implementation example, see the [reference dapp](https://github.com/arkade-os/arkade-snap/tree/master/packages/site).
+For a complete implementation example, see the [reference dapp](https://github.com/arkade-os/snap/tree/master/packages/site).
 
 ## Permissions
 
@@ -183,7 +183,7 @@ This snap requires the following MetaMask permissions:
 ### Build from Source
 
 ```bash
-git clone https://github.com/arkade-os/arkade-snap.git
+git clone https://github.com/arkade-os/snap.git
 cd arkade-snap/packages/snap
 pnpm install
 pnpm build
@@ -207,18 +207,18 @@ pnpm start
 - [Arkade OS Documentation](https://arkadeos.com)
 - [Arkade SDK on npm](https://www.npmjs.com/package/@arkade-os/sdk)
 - [MetaMask Snaps Documentation](https://docs.metamask.io/snaps/)
-- [GitHub Repository](https://github.com/arkade-os/arkade-snap)
-- [Example Dapp](https://github.com/arkade-os/arkade-snap/tree/master/packages/site)
+- [GitHub Repository](https://github.com/arkade-os/snap)
+- [Example Dapp](https://github.com/arkade-os/snap/tree/master/packages/site)
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/arkade-os/arkade-snap/issues)
+- **Issues**: [GitHub Issues](https://github.com/arkade-os/snap/issues)
 - **Documentation**: [Arkade Docs](https://arkadeos.com)
 - **Community**: [Discord](https://discord.gg/arkade) (replace with actual link)
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/arkade-os/arkade-snap/blob/master/LICENSE) for details
+MIT License - see [LICENSE](https://github.com/arkade-os/snap/blob/master/LICENSE) for details
 
 ## Contributing
 
