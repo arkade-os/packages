@@ -1,6 +1,6 @@
 {
   "name": "@arkade-os/snap",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Arkade Wallet Snap - Bitcoin Layer 2 wallet with Arkade protocol support",
   "main": "./dist/bundle.js",
   "repository": {
