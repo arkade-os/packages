@@ -2,8 +2,8 @@
 
 A MetaMask Snap that brings Bitcoin Layer 2 functionality to your browser via the Ark protocol. This snap enables instant off-chain Bitcoin transactions (VTXOs), Lightning Network payments, and self-custodial Bitcoin management.
 
-![npm version](https://img.shields.io/npm/v/@arkade-os/arkade-snap)
-![license](https://img.shields.io/npm/l/@arkade-os/arkade-snap)
+![npm version](https://img.shields.io/npm/v/@arkade-os/snap)
+![license](https://img.shields.io/npm/l/@arkade-os/snap)
 
 ## Features
 
@@ -25,7 +25,7 @@ A MetaMask Snap that brings Bitcoin Layer 2 functionality to your browser via th
 await ethereum.request({
   method: 'wallet_requestSnaps',
   params: {
-    'npm:@arkade-os/arkade-snap': {}
+    'npm:@arkade-os/snap': {}
   }
 });
 ```
@@ -40,7 +40,7 @@ The Arkade Wallet Snap provides a minimal signing interface with 3 focused RPC m
 const response = await ethereum.request({
   method: 'wallet_invokeSnap',
   params: {
-    snapId: 'npm:@arkade-os/arkade-snap',
+    snapId: 'npm:@arkade-os/snap',
     request: {
       method: 'arkade_getPublicKey'
     }
@@ -60,7 +60,7 @@ const response = await ethereum.request({
 const response = await ethereum.request({
   method: 'wallet_invokeSnap',
   params: {
-    snapId: 'npm:@arkade-os/arkade-snap',
+    snapId: 'npm:@arkade-os/snap',
     request: {
       method: 'arkade_getAddress',
       params: {
@@ -84,7 +84,7 @@ const response = await ethereum.request({
 const response = await ethereum.request({
   method: 'wallet_invokeSnap',
   params: {
-    snapId: 'npm:@arkade-os/arkade-snap',
+    snapId: 'npm:@arkade-os/snap',
     request: {
       method: 'arkade_signPsbt',
       params: {
@@ -144,7 +144,7 @@ import { MetaMaskSnapIdentity } from './MetaMaskSnapIdentity';
 
 // Create identity provider
 const identity = new MetaMaskSnapIdentity(
-  'npm:@arkade-os/arkade-snap',
+  'npm:@arkade-os/snap',
   ethereum
 );
 
