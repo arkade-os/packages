@@ -1,9 +1,11 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Wallet, Ramps, RestArkProvider, type NetworkName } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
-const SNAP_ID = 'local:http://localhost:8080';
+// Get snap ID from environment variable (defaults to npm package for production)
+const SNAP_ID = import.meta.env.VITE_SNAP_ID || 'npm:@arkade-os/snap';
 const NETWORK_STORAGE_KEY = 'arkade-snap-network';
 
 // Network configuration type
@@ -202,10 +204,14 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       if (!isSnapInstalled) {
         // Request snap installation
+        // For local snaps, version is ignored. For npm snaps, use configured version range.
+        const snapVersion = SNAP_ID.startsWith('local:')
+          ? undefined
+          : (import.meta.env.VITE_SNAP_VERSION || '>=0.1.0');
         await window.ethereum.request({
           method: 'wallet_requestSnaps',
           params: {
-            [SNAP_ID]: { version: '^1.0.0' },
+            [SNAP_ID]: snapVersion ? { version: snapVersion } : {},
           },
         });
       }
@@ -273,7 +279,8 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       const identity = new MetaMaskSnapIdentity(
         compressedPublicKey,
         snapArkAddress,
-        window.ethereum
+        window.ethereum,
+        SNAP_ID
       );
 
       // Create Arkade Wallet

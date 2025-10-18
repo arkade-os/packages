@@ -240,6 +240,86 @@ The app uses a modern purple color scheme inspired by the Arkade brand:
 - **pnpm** - Fast, disk space efficient package manager
 
 
+## Deployment
+
+### Environment Configuration
+
+The dapp can be configured to connect to either a local snap (for development) or the published npm package (for production) using environment variables.
+
+#### Development Mode (Local Snap)
+
+For local development, create a `.env.development` file in `packages/site/`:
+
+```bash
+cd packages/site
+cp .env.example .env.development
+```
+
+The file should contain:
+
+```bash
+VITE_SNAP_ID=local:http://localhost:8080
+```
+
+Then start the development servers:
+
+```bash
+pnpm start  # From root - starts both snap and site
+```
+
+#### Production Mode (Published Snap)
+
+For production deployment, create a `.env.production` file in `packages/site/`:
+
+```bash
+cd packages/site
+cp .env.example .env.production
+```
+
+Edit the file to use the npm package:
+
+```bash
+VITE_SNAP_ID=npm:@arkade-os/snap
+```
+
+Then build for production:
+
+```bash
+cd packages/site
+pnpm build
+```
+
+The built files in `dist/` can be deployed to any static hosting service (Vercel, Netlify, GitHub Pages, etc.).
+
+#### Environment Variable Override
+
+You can also set the snap ID and version directly via environment variables:
+
+```bash
+# Build with npm snap (uses default version >=0.1.0)
+VITE_SNAP_ID=npm:@arkade-os/snap pnpm build
+
+# Or pin to a specific version
+VITE_SNAP_ID=npm:@arkade-os/snap VITE_SNAP_VERSION=0.1.2 pnpm build
+
+# Or use a version range
+VITE_SNAP_ID=npm:@arkade-os/snap VITE_SNAP_VERSION=^0.1.0 pnpm build
+```
+
+### Deploying to Production
+
+1. **Publish the snap** to npm (see Release Process below)
+2. **Configure environment** for production
+3. **Build the frontend**:
+
+   ```bash
+   cd packages/site
+   VITE_SNAP_ID=npm:@arkade-os/snap pnpm build
+   ```
+
+4. **Deploy** the `dist/` folder to your hosting service
+
+
 ## Release Process
 
 To publish a new version of the snap to npm:

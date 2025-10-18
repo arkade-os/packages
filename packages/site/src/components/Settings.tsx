@@ -3,8 +3,6 @@ import { useMetaMask, type SupportedNetwork } from './MetaMaskProvider';
 import './Settings.css';
 import './Modal.css';
 
-const SNAP_ID = 'local:http://localhost:8080';
-
 export const Settings: React.FC = () => {
   const { currentNetwork, networkConfig, switchNetwork, loading } = useMetaMask();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);

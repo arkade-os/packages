@@ -14,12 +14,13 @@ export class MetaMaskSnapIdentity {
   ethereum: any;
   snapId: string;
 
-  constructor(publicKeyHex: string, address: string, ethereum: any) {
+  constructor(publicKeyHex: string, address: string, ethereum: any, snapId?: string) {
     if (publicKeyHex.length !== 66) throw new Error('compressed public key must be 33-bytes ')
     this.publicKey =  hex.decode(publicKeyHex);
     this.address = address;
     this.ethereum = ethereum;
-    this.snapId = 'local:http://localhost:8080';
+    // Use provided snapId or default to npm package for production
+    this.snapId = snapId || 'npm:@arkade-os/snap';
   }
 
   /**

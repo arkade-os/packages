@@ -8,5 +8,8 @@ build
 coverage
 .env
 .env.local
+.env.development
+.env.production
+!.env.example
 *.tsbuildinfo
 .eslintcache
