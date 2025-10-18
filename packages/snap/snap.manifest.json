@@ -7,7 +7,7 @@
     "url": "https://github.com/arkade-os/snap.git"
   },
   "source": {
-    "shasum": "nYgzzMTvP+Om+bas3W8c9zu8CcRZ3pVx/pJ22hAeIFE=",
+    "shasum": "wPZoQk0ySB5RU4L7miJpq+2vUJCWyw9W2E8mzLMR8uU=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
