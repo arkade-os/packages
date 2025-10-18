@@ -43,16 +43,18 @@ This project uses a **simplified provider pattern** where the Snap only handles 
 
 ## Getting Started
 
-### 1. Clone and Install
+### 1. Install Dependencies
+
+Clone the repository and install dependencies:
 
 ```bash
 git clone <your-repo-url>
-cd arkade-metamask-snap
+cd arkade-snap
 pnpm install
 ```
 
-### 2. Start Development
-
+### 2. Start Development Servers  
+  
 Run both the Snap and the frontend in watch mode:
 
 ```bash
