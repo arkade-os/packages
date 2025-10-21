@@ -22,9 +22,9 @@ export interface NetworkConfig {
 
 export const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
   bitcoin: {
-    arkServerUrl: 'https://bitcoin-beta-v8.arkade.sh',
+    arkServerUrl: 'https://arkade.computer',
     esploraUrl: 'https://mempool.space/api',
-    boltzUrl: 'https://boltz-v8.arkade.sh',
+    boltzUrl: 'https://api.ark.boltz.exchange',
     networkName: 'bitcoin',
     hasLightning: true,
   },
