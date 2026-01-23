@@ -1,5 +1,6 @@
 import { base64, hex } from '@scure/base';
 import { type SignerSession, Transaction } from '@arkade-os/sdk';
+import type { AddressPurpose } from 'sats-connect';
 
 /**
  * Xverse wallet identity implementation for Bitcoin signing via Sats Connect.
@@ -127,7 +128,10 @@ export class XverseIdentity {
       // Import dynamically to avoid build errors
       const { request } = await import('sats-connect');
 
-      const response = await request('getAccounts', null);
+      const response = await request('getAccounts', {
+        purposes: ['payment', 'ordinals'] as AddressPurpose[],
+        message: 'Reconnect to Arkade wallet',
+      });
 
       if (response.status === 'success' && response.result.length > 0) {
         return true;
