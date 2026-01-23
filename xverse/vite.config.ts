@@ -11,8 +11,31 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
   },
   optimizeDeps: {
-    exclude: ['@arkade-os/sdk', '@arkade-os/boltz-swap'],
+    include: [
+      '@arkade-os/sdk',
+      '@arkade-os/boltz-swap',
+      'sats-connect',
+    ],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer/',
+      process: 'process/browser',
+      stream: 'stream-browserify',
+    },
+  },
+  define: {
+    'process.env': {},
+    global: 'globalThis',
   },
 });

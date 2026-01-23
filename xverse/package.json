@@ -17,10 +17,13 @@
     "@arkade-os/boltz-swap": "^0.2.18",
     "@scure/base": "^2.0.0",
     "@scure/btc-signer": "^2.0.1",
+    "buffer": "^6.0.3",
+    "process": "^0.11.10",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-icons": "^5.0.0",
-    "sats-connect": "^2.7.0"
+    "sats-connect": "^2.7.0",
+    "stream-browserify": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
