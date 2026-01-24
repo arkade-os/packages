@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 
 const AppContent: React.FC = () => {
   const { walletInfo, isConnecting, connectWallet, disconnectWallet, currentNetwork, switchNetwork } = useXverse();
+  const isAutoConnecting = !walletInfo && isConnecting;
 
   return (
     <div style={styles.app}>
@@ -16,7 +17,9 @@ const AppContent: React.FC = () => {
         <div style={styles.headerActions}>
           {!walletInfo ? (
             <button
-              onClick={connectWallet}
+              onClick={() => {
+                void connectWallet();
+              }}
               disabled={isConnecting}
               style={styles.connectButton}
             >
@@ -29,8 +32,10 @@ const AppContent: React.FC = () => {
                 onChange={(e) => switchNetwork(e.target.value as 'bitcoin' | 'signet')}
                 style={styles.networkSelect}
               >
-                <option value="bitcoin">Bitcoin Mainnet</option>
-                <option value="signet">Bitcoin Signet</option>
+                <option value="bitcoin">Bitcoin</option>
+                <option value="signet">Signet</option>
+                <option value="regtest">Regtest</option>
+
               </select>
               <button onClick={disconnectWallet} style={styles.disconnectButton}>
                 Disconnect
@@ -42,6 +47,13 @@ const AppContent: React.FC = () => {
 
       {walletInfo ? (
         <Dashboard />
+      ) : isAutoConnecting ? (
+        <div style={styles.welcome}>
+          <div style={styles.welcomeCard}>
+            <h2>Connecting...</h2>
+            <p>Reconnecting to your Xverse wallet.</p>
+          </div>
+        </div>
       ) : (
         <div style={styles.welcome}>
           <div style={styles.welcomeCard}>
@@ -57,7 +69,9 @@ const AppContent: React.FC = () => {
               <li>🦊 Powered by Xverse wallet and Sats Connect</li>
             </ul>
             <button
-              onClick={connectWallet}
+              onClick={() => {
+                void connectWallet();
+              }}
               disabled={isConnecting}
               style={styles.connectButtonLarge}
             >

@@ -25,7 +25,7 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     if (walletInfo) {
       const interval = setInterval(() => {
-        getBalance().catch(console.error);
+        getBalance({ silent: true }).catch(() => {});
       }, 10000);
 
       return () => clearInterval(interval);
@@ -136,7 +136,13 @@ export const Dashboard: React.FC = () => {
       <div style={styles.section}>
         <div style={styles.balanceHeader}>
           <h3>Balance</h3>
-          <button onClick={getBalance} disabled={isLoading} style={styles.button}>
+          <button
+            onClick={() => {
+              void getBalance();
+            }}
+            disabled={isLoading}
+            style={styles.button}
+          >
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>

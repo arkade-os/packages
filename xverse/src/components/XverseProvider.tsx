@@ -2,11 +2,10 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Wallet, Ramps, type NetworkName } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
-import { XverseIdentity } from '../utils/XverseIdentity';
-import { request, type AddressPurpose } from 'sats-connect';
+import ArkWallet, { type SatsConnectNetwork } from '../utils/ArkWallet';
 
 // Network configuration type
-export type SupportedNetwork = 'bitcoin' | 'signet';
+export type SupportedNetwork = 'bitcoin' | 'signet' | 'regtest';
 
 // Network configurations
 export interface NetworkConfig {
@@ -15,6 +14,7 @@ export interface NetworkConfig {
   esploraUrl: string;
   boltzUrl?: string;
   hasLightning: boolean;
+  satsConnectNetwork: SatsConnectNetwork;
 }
 
 export const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
@@ -24,6 +24,7 @@ export const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
     boltzUrl: 'https://api.ark.boltz.exchange',
     networkName: 'bitcoin',
     hasLightning: true,
+    satsConnectNetwork: 'Mainnet',
   },
   signet: {
     arkServerUrl: 'https://signet.arkade.sh',
@@ -31,11 +32,21 @@ export const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
     boltzUrl: undefined, // No Boltz support for Signet
     networkName: 'signet',
     hasLightning: false,
+    satsConnectNetwork: 'Signet',
   },
+  regtest: {
+    arkServerUrl: 'http://localhost:7070',
+    esploraUrl: 'http://localhost:3000',
+    boltzUrl: undefined, // No Boltz support for Signet
+    networkName: 'regtest',
+    hasLightning: false,
+    satsConnectNetwork: 'Regtest',
+  }
 };
 
 // Default network
 export const DEFAULT_NETWORK: SupportedNetwork = 'bitcoin';
+const AUTO_CONNECT_KEY = 'xverse:autoConnect';
 
 interface WalletInfo {
   arkAddress: string;
@@ -43,6 +54,7 @@ interface WalletInfo {
   paymentAddress: string;
   ordinalsAddress?: string;
   network: SupportedNetwork;
+  userPubKey?: string;
 }
 
 interface Balance {
@@ -77,9 +89,9 @@ interface XverseContextType {
   isConnecting: boolean;
   isLoading: boolean;
   error: string | null;
-  connectWallet: () => Promise<void>;
+  connectWallet: (options?: { silent?: boolean }) => Promise<void>;
   disconnectWallet: () => void;
-  getBalance: () => Promise<void>;
+  getBalance: (options?: { silent?: boolean }) => Promise<void>;
   sendBitcoin: (toAddress: string, amount: number) => Promise<string>;
   getTransactionHistory: () => Promise<void>;
   payLightningInvoice: (invoice: string) => Promise<string>;
@@ -105,6 +117,7 @@ interface XverseProviderProps {
 
 export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [arkWallet, setArkWallet] = useState<ArkWallet | null>(null);
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -116,92 +129,53 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
   /**
    * Connect to Xverse wallet and create Arkade wallet instance
    */
-  const connectWallet = useCallback(async () => {
+  const connectWallet = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
     setIsConnecting(true);
-    setError(null);
+    if (!silent) {
+      setError(null);
+    }
 
     try {
-      console.log('Connecting to Xverse wallet...');
-
-      // Request wallet connection from Xverse
-      const response = await request('getAccounts', {
-        purposes: ['payment', 'ordinals'] as AddressPurpose[],
-        message: 'Connect to Arkade Bitcoin Layer 2 Wallet',
-      });
-
-      console.log('Xverse wallet connected:', response);
-
-      if (response.status === 'error') {
-        throw new Error(response.error?.message || 'Failed to connect to Xverse wallet');
-      }
-
-      // The response has a 'result' array, not 'addresses'
-      const addresses = response.result;
-
-      if (!addresses || addresses.length === 0) {
-        throw new Error('No addresses returned from Xverse wallet');
-      }
-
-      const paymentAddress = addresses.find(
-        (addr: any) => addr.purpose === 'payment'
-      );
-      const ordinalsAddress = addresses.find(
-        (addr: any) => addr.purpose === 'ordinals'
-      );
-
-      if (!paymentAddress) {
-        throw new Error('No payment address found in Xverse wallet');
-      }
-
-      console.log('Payment address:', paymentAddress.address);
-      console.log('Public key:', paymentAddress.publicKey);
-
-      // Get network config
       const networkConfig = NETWORK_CONFIGS[currentNetwork];
-
-      // Create XverseIdentity instance
-      const identity = new XverseIdentity(
-        paymentAddress.publicKey,
-        paymentAddress.address, // Use payment address as default
-        paymentAddress.address,
-        ordinalsAddress?.address
-      );
-
-      console.log('Creating Arkade wallet with Xverse identity...');
-
-      // Create Arkade Wallet instance with XverseIdentity
-      const arkadeWallet = await Wallet.create({
-        identity,
+      const arkWalletInstance = new ArkWallet({
         arkServerUrl: networkConfig.arkServerUrl,
         esploraUrl: networkConfig.esploraUrl,
+        satsConnectNetwork: networkConfig.satsConnectNetwork,
+        connectMessage: 'Connect to Arkade Bitcoin Layer 2 Wallet',
       });
 
-      // Get Ark address
-      const arkAddress = await arkadeWallet.getAddress();
-      const boardingAddress = await arkadeWallet.getBoardingAddress();
+      const info = await arkWalletInstance.connect();
+      const walletInstance = arkWalletInstance.getWallet();
 
-      console.log('Arkade wallet created:', {
-        arkAddress,
-        boardingAddress,
-      });
+      if (!walletInstance) {
+        throw new Error('Failed to initialize Arkade wallet');
+      }
 
-      // Set wallet state
-      setWallet(arkadeWallet);
+      setArkWallet(arkWalletInstance);
+      setWallet(walletInstance);
       setWalletInfo({
-        arkAddress,
-        boardingAddress,
-        paymentAddress: paymentAddress.address,
-        ordinalsAddress: ordinalsAddress?.address,
+        arkAddress: info.arkAddress,
+        boardingAddress: info.boardingAddress,
+        paymentAddress: info.paymentAddress,
+        ordinalsAddress: info.ordinalAddress,
         network: currentNetwork,
+        userPubKey: info.userPubKey,
       });
 
-      // Auto-fetch balance
-      await fetchBalance(arkadeWallet);
-
-      setIsConnecting(false);
+      await fetchBalance(arkWalletInstance);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(AUTO_CONNECT_KEY, '1');
+      }
     } catch (err: any) {
-      console.error('Failed to connect Xverse wallet:', err);
-      setError(err.message || 'Failed to connect to Xverse wallet');
+      if (!silent) {
+        setError(err.message || 'Failed to connect to Xverse wallet');
+      }
+      setArkWallet(null);
+      setWallet(null);
+      setWalletInfo(null);
+      setBalance(null);
+    } finally {
       setIsConnecting(false);
     }
   }, [currentNetwork]);
@@ -210,21 +184,38 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
    * Disconnect wallet and clear state
    */
   const disconnectWallet = useCallback(() => {
+    arkWallet?.reset();
+    setArkWallet(null);
     setWallet(null);
     setWalletInfo(null);
     setBalance(null);
     setTransactions([]);
     setError(null);
-  }, []);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(AUTO_CONNECT_KEY);
+    }
+  }, [arkWallet]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (wallet || isConnecting) {
+      return;
+    }
+    if (window.localStorage.getItem(AUTO_CONNECT_KEY) !== '1') {
+      return;
+    }
+    connectWallet({ silent: true }).catch(() => {});
+  }, [wallet, isConnecting, connectWallet]);
 
   /**
    * Helper function to fetch balance
    */
-  const fetchBalance = async (walletInstance: Wallet): Promise<Balance> => {
-    // Use the SDK's getBalance() method
-    const bal = await walletInstance.getBalance();
-    const vtxos = await walletInstance.getVtxos();
-    const boardingUtxos = await walletInstance.getBoardingUtxos();
+  const fetchBalance = async (arkWalletInstance: ArkWallet): Promise<Balance> => {
+    const bal = await arkWalletInstance.getBalance();
+    const vtxos = await arkWalletInstance.getVtxos();
+    const boardingUtxos = await arkWalletInstance.getBoardingUtxos();
 
     // Calculate onchain balance from boarding UTXOs
     let onchainBalance = 0;
@@ -259,31 +250,37 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
   /**
    * Get wallet balance
    */
-  const getBalance = useCallback(async () => {
-    if (!wallet) {
+  const getBalance = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!arkWallet) {
       throw new Error('Wallet not connected');
     }
 
-    setIsLoading(true);
-    setError(null);
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
-      await fetchBalance(wallet);
+      await fetchBalance(arkWallet);
     } catch (err: any) {
-      console.error('Failed to fetch balance:', err);
-      setError(err.message || 'Failed to fetch balance');
+      if (!silent) {
+        setError(err.message || 'Failed to fetch balance');
+      }
       throw err;
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
-  }, [wallet]);
+  }, [arkWallet]);
 
   /**
    * Send Bitcoin
    */
   const sendBitcoin = useCallback(
     async (toAddress: string, amount: number): Promise<string> => {
-      if (!wallet) {
+      if (!arkWallet) {
         throw new Error('Wallet not connected');
       }
 
@@ -291,29 +288,21 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
       setError(null);
 
       try {
-        console.log('Sending Bitcoin:', { toAddress, amount });
-
         // Create and send transaction using the correct API
-        const txid = await wallet.sendBitcoin({
-          address: toAddress,
-          amount: amount,
-        });
-
-        console.log('Transaction sent:', txid);
+        const txid = await arkWallet.sendBitcoin(toAddress, amount);
 
         // Refresh balance
-        await fetchBalance(wallet);
+        await fetchBalance(arkWallet);
 
         return txid;
       } catch (err: any) {
-        console.error('Failed to send Bitcoin:', err);
         setError(err.message || 'Failed to send Bitcoin');
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [wallet]
+    [arkWallet]
   );
 
   /**
@@ -342,7 +331,6 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
 
       setTransactions(txList);
     } catch (err: any) {
-      console.error('Failed to fetch transaction history:', err);
       setError(err.message || 'Failed to fetch transaction history');
       throw err;
     } finally {
@@ -369,8 +357,6 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
       setError(null);
 
       try {
-        console.log('Paying Lightning invoice:', invoice);
-
         // Create Lightning instance with correct API
         const swapProvider = new BoltzSwapProvider({
           apiUrl: networkConfig.boltzUrl,
@@ -384,21 +370,20 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
         // Pay invoice (submarine swap: VTXO -> Lightning)
         const result = await lightning.sendLightningPayment({ invoice });
 
-        console.log('Invoice paid:', result);
-
         // Refresh balance
-        await fetchBalance(wallet);
+        if (arkWallet) {
+          await fetchBalance(arkWallet);
+        }
 
         return result.preimage || '';
       } catch (err: any) {
-        console.error('Failed to pay Lightning invoice:', err);
         setError(err.message || 'Failed to pay Lightning invoice');
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [wallet, currentNetwork]
+    [wallet, arkWallet, currentNetwork]
   );
 
   /**
@@ -420,8 +405,6 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
       setError(null);
 
       try {
-        console.log('Creating Lightning invoice:', { amount, description });
-
         // Create Lightning instance with correct API
         const swapProvider = new BoltzSwapProvider({
           apiUrl: networkConfig.boltzUrl,
@@ -438,30 +421,28 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
           description: description || 'Arkade wallet payment',
         });
 
-        console.log('Invoice created:', result);
-
         // Start background process to claim the swap
         lightning
           .waitAndClaim(result.pendingSwap)
           .then(async () => {
-            console.log('Lightning payment received and claimed');
             // Refresh balance after claim
-            await fetchBalance(wallet);
+            if (arkWallet) {
+              await fetchBalance(arkWallet);
+            }
           })
           .catch((err) => {
-            console.error('Failed to claim swap:', err);
+            setError(err?.message || 'Failed to claim swap');
           });
 
         return result.invoice;
       } catch (err: any) {
-        console.error('Failed to create Lightning invoice:', err);
         setError(err.message || 'Failed to create Lightning invoice');
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [wallet, currentNetwork]
+    [wallet, arkWallet, currentNetwork]
   );
 
   /**
@@ -476,8 +457,6 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      console.log('Onboarding funds...');
-
       // Get fee info from the ark provider
       const info = await wallet.arkProvider.getInfo();
 
@@ -485,20 +464,19 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
       const ramps = new Ramps(wallet);
       const txid = await ramps.onboard(info.fees);
 
-      console.log('Funds onboarded:', txid);
-
       // Refresh balance
-      await fetchBalance(wallet);
+      if (arkWallet) {
+        await fetchBalance(arkWallet);
+      }
 
       return txid;
     } catch (err: any) {
-      console.error('Failed to onboard funds:', err);
       setError(err.message || 'Failed to onboard funds');
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [wallet, arkWallet]);
 
   /**
    * Switch network
@@ -517,25 +495,46 @@ export const XverseProvider: React.FC<XverseProviderProps> = ({ children }) => {
   );
 
   // Context value
-  const value: XverseContextType = {
-    wallet,
-    walletInfo,
-    balance,
-    transactions,
-    isConnecting,
-    isLoading,
-    error,
-    connectWallet,
-    disconnectWallet,
-    getBalance,
-    sendBitcoin,
-    getTransactionHistory,
-    payLightningInvoice,
-    createLightningInvoice,
-    onboardFunds,
-    switchNetwork,
-    currentNetwork,
-  };
+  const value = React.useMemo<XverseContextType>(
+    () => ({
+      wallet,
+      walletInfo,
+      balance,
+      transactions,
+      isConnecting,
+      isLoading,
+      error,
+      connectWallet,
+      disconnectWallet,
+      getBalance,
+      sendBitcoin,
+      getTransactionHistory,
+      payLightningInvoice,
+      createLightningInvoice,
+      onboardFunds,
+      switchNetwork,
+      currentNetwork,
+    }),
+    [
+      wallet,
+      walletInfo,
+      balance,
+      transactions,
+      isConnecting,
+      isLoading,
+      error,
+      connectWallet,
+      disconnectWallet,
+      getBalance,
+      sendBitcoin,
+      getTransactionHistory,
+      payLightningInvoice,
+      createLightningInvoice,
+      onboardFunds,
+      switchNetwork,
+      currentNetwork,
+    ]
+  );
 
   return <XverseContext.Provider value={value}>{children}</XverseContext.Provider>;
 };

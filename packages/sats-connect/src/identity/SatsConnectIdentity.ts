@@ -1,19 +1,13 @@
 import { base64, hex } from '@scure/base';
 import { Identity, type SignerSession, Transaction } from '@arkade-os/sdk';
-import type { Params, Requests, RpcResult } from 'sats-connect';
 import { AddressPurpose } from 'sats-connect';
-
-type SatsConnectRequest = <Method extends keyof Requests>(
-  method: Method,
-  params: Params<Method>,
-  providerId?: string
-) => Promise<RpcResult<Method>>;
+import type { SatsConnectRequest } from '../types';
 
 /**
  * External wallet identity implementation using sats-connect signPsbt.
- * Delegates signing to the Xverse extension via Sats Connect.
+ * Delegates signing to the connected Sats Connect wallet.
  */
-export class XverseIdentity implements Identity {
+export class SatsConnectIdentity implements Identity {
   private publicKey: Uint8Array;
   private address: string;
   private satsConnectRequest: SatsConnectRequest;
@@ -53,19 +47,19 @@ export class XverseIdentity implements Identity {
   signerSession(): SignerSession {
     return {
       async getPublicKey(): Promise<Uint8Array> {
-        throw new Error('MuSig2 getPublicKey is not supported by Xverse wallet');
+        throw new Error('MuSig2 getPublicKey is not supported by Sats Connect wallets');
       },
       async init(): Promise<void> {
-        throw new Error('MuSig2 init is not supported by Xverse wallet');
+        throw new Error('MuSig2 init is not supported by Sats Connect wallets');
       },
       async getNonces(): Promise<any> {
-        throw new Error('MuSig2 getNonces is not supported by Xverse wallet');
+        throw new Error('MuSig2 getNonces is not supported by Sats Connect wallets');
       },
       async aggregatedNonces(): Promise<{ hasAllNonces: boolean }> {
-        throw new Error('MuSig2 aggregatedNonces is not supported by Xverse wallet');
+        throw new Error('MuSig2 aggregatedNonces is not supported by Sats Connect wallets');
       },
       async sign(): Promise<any> {
-        throw new Error('MuSig2 sign is not supported by Xverse wallet');
+        throw new Error('MuSig2 sign is not supported by Sats Connect wallets');
       },
     };
   }
@@ -75,7 +69,7 @@ export class XverseIdentity implements Identity {
     signatureType: 'schnorr' | 'ecdsa' = 'schnorr'
   ): Promise<Uint8Array> {
     throw new Error(
-      `Message signing (${signatureType}) is not yet implemented for Xverse wallet. ` +
+      `Message signing (${signatureType}) is not yet implemented for Sats Connect wallets. ` +
         'This feature requires implementing the signMessage method from Sats Connect.'
     );
   }
@@ -100,7 +94,7 @@ export class XverseIdentity implements Identity {
     try {
       const response = await this.satsConnectRequest('wallet_connect', {
         addresses: [AddressPurpose.Payment, AddressPurpose.Ordinals],
-        message: 'Reconnecting to ARK Wallet',
+        message: 'Reconnecting to Arkade wallet',
       });
 
       if (response.status === 'success') {
@@ -186,7 +180,7 @@ export class XverseIdentity implements Identity {
       }
 
       if (error instanceof Error) {
-        throw new Error(`Xverse wallet signing failed: ${error.message}`);
+        throw new Error(`Sats Connect wallet signing failed: ${error.message}`);
       }
       throw error;
     }
