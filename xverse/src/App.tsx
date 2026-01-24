@@ -1,9 +1,50 @@
 import React from 'react';
-import { XverseProvider, useXverse } from './components/XverseProvider';
+import {
+  ArkadeWalletProvider,
+  useArkadeWallet,
+  type NetworkConfig,
+} from '@arkade-os/sats-connect-react';
 import { Dashboard } from './components/Dashboard';
 
+// Network configuration - kept in demo app, not in package
+type SupportedNetwork = 'bitcoin' | 'signet' | 'regtest';
+
+const NETWORK_CONFIGS: Record<SupportedNetwork, NetworkConfig> = {
+  bitcoin: {
+    arkServerUrl: 'https://arkade.computer',
+    esploraUrl: 'https://mempool.space/api',
+    boltzUrl: 'https://api.ark.boltz.exchange',
+    networkName: 'bitcoin',
+    hasLightning: true,
+    satsConnectNetwork: 'Mainnet',
+  },
+  signet: {
+    arkServerUrl: 'https://signet.arkade.sh',
+    esploraUrl: 'https://mempool.space/signet/api',
+    boltzUrl: undefined,
+    networkName: 'signet',
+    hasLightning: false,
+    satsConnectNetwork: 'Signet',
+  },
+  regtest: {
+    arkServerUrl: 'http://localhost:7070',
+    esploraUrl: 'http://localhost:3000',
+    boltzUrl: undefined,
+    networkName: 'regtest',
+    hasLightning: false,
+    satsConnectNetwork: 'Regtest',
+  },
+};
+
 const AppContent: React.FC = () => {
-  const { walletInfo, isConnecting, connectWallet, disconnectWallet, currentNetwork, switchNetwork } = useXverse();
+  const {
+    walletInfo,
+    isConnecting,
+    connectWallet,
+    disconnectWallet,
+    currentNetwork,
+    switchNetwork,
+  } = useArkadeWallet<SupportedNetwork>();
   const isAutoConnecting = !walletInfo && isConnecting;
 
   return (
@@ -29,13 +70,12 @@ const AppContent: React.FC = () => {
             <div style={styles.connectedActions}>
               <select
                 value={currentNetwork}
-                onChange={(e) => switchNetwork(e.target.value as 'bitcoin' | 'signet')}
+                onChange={(e) => switchNetwork(e.target.value as SupportedNetwork)}
                 style={styles.networkSelect}
               >
                 <option value="bitcoin">Bitcoin</option>
                 <option value="signet">Signet</option>
                 <option value="regtest">Regtest</option>
-
               </select>
               <button onClick={disconnectWallet} style={styles.disconnectButton}>
                 Disconnect
@@ -59,14 +99,14 @@ const AppContent: React.FC = () => {
           <div style={styles.welcomeCard}>
             <h2>Welcome to Arkade</h2>
             <p>
-              Experience instant Bitcoin transactions with the Ark protocol, powered by
-              your Xverse wallet.
+              Experience instant Bitcoin transactions with the Ark protocol, powered by your
+              Xverse wallet.
             </p>
             <ul style={styles.featureList}>
-              <li>✨ Instant off-chain Bitcoin transfers (VTXOs)</li>
-              <li>⚡ Lightning Network payments via submarine swaps</li>
-              <li>🔒 Self-custodial - your keys, your Bitcoin</li>
-              <li>🦊 Powered by Xverse wallet and Sats Connect</li>
+              <li>Instant off-chain Bitcoin transfers (VTXOs)</li>
+              <li>Lightning Network payments via submarine swaps</li>
+              <li>Self-custodial - your keys, your Bitcoin</li>
+              <li>Powered by Xverse wallet and Sats Connect</li>
             </ul>
             <button
               onClick={() => {
@@ -107,9 +147,16 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <XverseProvider>
+    <ArkadeWalletProvider
+      config={{
+        networks: NETWORK_CONFIGS,
+        defaultNetwork: 'bitcoin',
+        autoConnectKey: 'xverse:autoConnect',
+        connectMessage: 'Connect to Arkade Bitcoin Layer 2 Wallet',
+      }}
+    >
       <AppContent />
-    </XverseProvider>
+    </ArkadeWalletProvider>
   );
 }
 

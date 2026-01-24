@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useXverse } from './XverseProvider';
+import { useArkadeWallet } from '@arkade-os/sats-connect-react';
 
 export const Dashboard: React.FC = () => {
   const {
@@ -13,7 +13,7 @@ export const Dashboard: React.FC = () => {
     payLightningInvoice,
     createLightningInvoice,
     currentNetwork,
-  } = useXverse();
+  } = useArkadeWallet();
 
   const [sendAddress, setSendAddress] = useState('');
   const [sendAmount, setSendAmount] = useState('');
