@@ -26,8 +26,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run snap tests
-        run: pnpm --filter arkade-snap test
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Run lint
-        run: pnpm --filter arkade-snap lint
+        run: pnpm lint

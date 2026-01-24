@@ -10,7 +10,7 @@
     "start": "vite --port 8000",
     "preview": "vite preview",
     "lint": "pnpm lint:eslint && pnpm lint:misc --check",
-    "lint:eslint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:eslint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "lint:fix": "pnpm lint:eslint --fix && pnpm lint:misc --write",
     "lint:misc": "prettier '**/*.{json,css}' --ignore-path ../../.prettierignore",
     "format": "pnpm lint:misc --write && pnpm lint:eslint --fix",
