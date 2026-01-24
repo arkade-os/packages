@@ -13,3 +13,5 @@ coverage
 !.env.example
 *.tsbuildinfo
 .eslintcache
+.claude 
+CLAUDE.md

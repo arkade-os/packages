@@ -4,10 +4,10 @@
   "proposedName": "Arkade Wallet",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/snap.git"
+    "url": "https://github.com/arkade-os/packages.git"
   },
   "source": {
-    "shasum": "YluBYQk/zIftTCKLAA6b/gFfXG+8XwSKkNUu69tmupU=",
+    "shasum": "pJ5q4dlJxZtmqsPQykmqjv6Cgich3oy8AE73zvxE8mM=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",

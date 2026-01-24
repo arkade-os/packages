@@ -5,7 +5,7 @@
   "main": "./dist/bundle.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/snap.git"
+    "url": "https://github.com/arkade-os/packages.git"
   },
   "license": "MIT",
   "keywords": [
