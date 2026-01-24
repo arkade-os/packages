@@ -1,11 +1,11 @@
 {
-  "name": "arkade-metamask-snap",
+  "name": "arkade-packages",
   "version": "0.1.0",
   "private": true,
-  "description": "Arkade Wallet MetaMask Snap - Bitcoin Layer 2 wallet with Lightning support",
+  "description": "Arkade packages for the web - wallet integrations, checkout, swaps, and more",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/snap.git"
+    "url": "https://github.com/arkade-os/packages.git"
   },
   "license": "MIT",
   "workspaces": [
