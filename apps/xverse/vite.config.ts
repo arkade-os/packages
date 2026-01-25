@@ -9,6 +9,14 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      '/lendaswap-api': {
+        target: 'https://apilendaswap.lendasat.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/lendaswap-api/, ''),
+        secure: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',

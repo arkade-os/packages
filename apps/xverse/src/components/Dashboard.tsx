@@ -8,7 +8,10 @@ import {
   type QuoteResponse,
 } from '@lendasat/lendaswap-sdk';
 
-const LENDASWAP_API_URL = 'https://apilendaswap.lendasat.com';
+const LENDASWAP_API_URL =
+  import.meta.env.DEV
+    ? `${window.location.origin}/lendaswap-api`
+    : 'https://apilendaswap.lendasat.com';
 const LENDASWAP_TOKEN = 'usdt0_pol';
 const POLYGON_CHAIN_ID = '0x89';
 const POLYGON_PARAMS = {
@@ -64,6 +67,8 @@ export const Dashboard: React.FC = () => {
   const [evmChainId, setEvmChainId] = useState('');
   const [evmError, setEvmError] = useState('');
   const [isEvmConnecting, setIsEvmConnecting] = useState(false);
+  const [isFundingVhtlc, setIsFundingVhtlc] = useState(false);
+  const [isLoadingSwaps, setIsLoadingSwaps] = useState(false);
   const lendaswapInitRef = useRef<Promise<Client> | null>(null);
 
   // Auto-refresh balance every 10 seconds
@@ -89,6 +94,7 @@ export const Dashboard: React.FC = () => {
     setLendaswapError('');
 
     const initPromise = (async () => {
+      console.log('[Lendaswap] Initializing client with URL:', LENDASWAP_API_URL);
       const client = await Client.builder()
         .url(LENDASWAP_API_URL)
         .withIdbStorage()
@@ -97,9 +103,36 @@ export const Dashboard: React.FC = () => {
         .esploraUrl('https://mempool.space/api')
         .build();
 
+      console.log('[Lendaswap] Client built, calling init...');
       await client.init();
+      console.log('[Lendaswap] Client initialized successfully');
       setLendaswapClient(client);
       setLendaswapStatus('ready');
+
+      // Load pending swaps from storage
+      try {
+        const allSwaps = await client.listAllSwaps();
+        console.log('[Lendaswap] Loaded swaps from storage:', allSwaps);
+        if (allSwaps && allSwaps.length > 0) {
+          // Find pending Arkade→EVM swaps (newest first)
+          // Swaps are wrapped in {response: ..., swap_params: ...}
+          const pendingArkadeSwaps = allSwaps
+            .map((s: any) => s.response || s)
+            .filter((swap: any) => swap.htlc_address_arkade && swap.status !== 'Completed' && swap.status !== 'Refunded');
+
+          console.log('[Lendaswap] Pending Arkade swaps:', pendingArkadeSwaps);
+
+          // Pick the last one (most recent)
+          if (pendingArkadeSwaps.length > 0) {
+            const swap = pendingArkadeSwaps[pendingArkadeSwaps.length - 1];
+            console.log('[Lendaswap] Restoring pending swap:', swap);
+            setLendaswapSwap(swap as unknown as BtcToEvmSwapResponse);
+          }
+        }
+      } catch (err) {
+        console.warn('[Lendaswap] Failed to load swaps:', err);
+      }
+
       return client;
     })();
 
@@ -315,10 +348,14 @@ export const Dashboard: React.FC = () => {
 
     setIsQuoting(true);
     try {
+      console.log('[Lendaswap] Getting quote for amount:', amount.toString());
       const client = await initLendaswap();
+      console.log('[Lendaswap] Client ready, fetching quote...');
       const quote = await client.getQuote('btc_arkade', LENDASWAP_TOKEN, amount);
+      console.log('[Lendaswap] Quote received:', quote);
       setLendaswapQuote(quote);
     } catch (err: any) {
+      console.error('[Lendaswap] Quote error:', err);
       setLendaswapError(err?.message ?? 'Failed to fetch quote.');
     } finally {
       setIsQuoting(false);
@@ -369,11 +406,18 @@ export const Dashboard: React.FC = () => {
     }
 
     setIsRefreshingSwap(true);
+    setLendaswapError('');
     try {
       const client = await initLendaswap();
+      console.log('[Lendaswap] Refreshing swap:', lendaswapSwap.id);
       const refreshed = await client.getSwap(lendaswapSwap.id);
-      setLendaswapSwap(refreshed as unknown as BtcToEvmSwapResponse);
+      console.log('[Lendaswap] Refreshed swap raw:', refreshed);
+      // Unwrap if needed - response may be wrapped in {response: ..., swap_params: ...}
+      const swap = (refreshed as any)?.response || refreshed;
+      console.log('[Lendaswap] Refreshed swap:', swap);
+      setLendaswapSwap(swap as unknown as BtcToEvmSwapResponse);
     } catch (err: any) {
+      console.error('[Lendaswap] Refresh error:', err);
       setLendaswapError(err?.message ?? 'Failed to refresh swap.');
     } finally {
       setIsRefreshingSwap(false);
@@ -472,6 +516,31 @@ export const Dashboard: React.FC = () => {
       setLendaswapError(err?.message ?? 'Failed to claim swap.');
     } finally {
       setIsClaimingEvmSwap(false);
+    }
+  };
+
+  const handleFundVhtlc = async () => {
+    if (!lendaswapSwap?.htlc_address_arkade || !lendaswapSwap?.source_amount) {
+      setLendaswapError('No VHTLC address or amount available.');
+      return;
+    }
+
+    setIsFundingVhtlc(true);
+    setLendaswapError('');
+    try {
+      const amount =
+        typeof lendaswapSwap.source_amount === 'bigint'
+          ? Number(lendaswapSwap.source_amount)
+          : lendaswapSwap.source_amount;
+      console.log('[Lendaswap] Funding VHTLC:', lendaswapSwap.htlc_address_arkade, 'with', amount, 'sats');
+      const txid = await sendBitcoin(lendaswapSwap.htlc_address_arkade, amount);
+      console.log('[Lendaswap] VHTLC funded, txid:', txid);
+      alert(`VHTLC funded! TXID: ${txid}\n\nClick Refresh to update status, then Claim when ready.`);
+    } catch (err: any) {
+      console.error('[Lendaswap] Fund error:', err);
+      setLendaswapError(err?.message ?? 'Failed to fund VHTLC.');
+    } finally {
+      setIsFundingVhtlc(false);
     }
   };
 
@@ -854,12 +923,21 @@ export const Dashboard: React.FC = () => {
                         )}
                         <div style={styles.swapActions}>
                           <button
+                            onClick={handleFundVhtlc}
+                            disabled={isFundingVhtlc || isLoading}
+                            style={styles.button}
+                          >
+                            {isFundingVhtlc ? 'Funding...' : 'Fund VHTLC'}
+                          </button>
+                          <button
                             onClick={handleRefreshLendaswapSwap}
                             disabled={isRefreshingSwap}
                             style={styles.buttonSecondary}
                           >
                             {isRefreshingSwap ? 'Refreshing...' : 'Refresh'}
                           </button>
+                        </div>
+                        <div style={styles.swapActions}>
                           <button
                             onClick={handleClaimLendaswapSwap}
                             disabled={isClaimingSwap}
