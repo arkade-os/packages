@@ -206,7 +206,7 @@ Check that:
 
 ## Examples
 
-See the example app in `apps/checkout-example`.
+See the example app in `apps/checkout`.
 
 ## License
 

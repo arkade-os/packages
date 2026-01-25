@@ -25,7 +25,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  apps/checkout-example:
+  apps/checkout:
     dependencies:
       '@arkade-os/checkout':
         specifier: workspace:*
@@ -59,7 +59,7 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
-  apps/site:
+  apps/metamask-snap:
     dependencies:
       '@metamask/providers':
         specifier: ^18.3.0

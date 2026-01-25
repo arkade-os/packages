@@ -1,6 +1,7 @@
 node_modules
 dist
 build
+.next
 *.log
 .DS_Store
 *.snap
@@ -15,4 +16,3 @@ coverage
 .eslintcache
 .claude 
 CLAUDE.md
-.next

@@ -1,6 +1,6 @@
-# Arkade Checkout Example
+# Arkade Checkout
 
-A complete Next.js example demonstrating how to integrate Bitcoin Lightning payments using `@arkade-os/checkout`.
+A complete Next.js app demonstrating how to integrate Bitcoin Lightning payments using `@arkade-os/checkout`.
 
 ## Features
 
@@ -46,7 +46,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Project Structure
 
 ```
-example/
+apps/checkout/
 ├── app/
 │   ├── api/
 │   │   └── arkade/
