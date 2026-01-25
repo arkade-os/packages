@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { Wallet } from '@arkade-os/sdk';
+import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
+import { getCachedPrivateKey } from '../vss';
+
+export async function handleCreate(request: NextRequest) {
+  try {
+    const { title, description, amountSats, metadata } = await request.json();
+
+    // Get private key from VSS
+    const identity = await getCachedPrivateKey();
+    const wallet = await Wallet.create({
+      identity,
+      arkServerUrl: process.env.ARKADE_SERVER_URL || 'https://arkade.computer',
+    });
+
+    const swapProvider = new BoltzSwapProvider({
+      apiUrl: process.env.BOLTZ_API_URL || 'https://api.ark.boltz.exchange',
+      network: (process.env.ARKADE_NETWORK as any) || 'bitcoin',
+    });
+
+    const arkadeLightning = new ArkadeLightning({
+      wallet,
+      swapProvider,
+    });
+
+    // Create reverse swap
+    const result = await arkadeLightning.createLightningInvoice({
+      amount: amountSats,
+      description: title,
+    });
+
+    // Store checkout in KV
+    const checkoutId = result.paymentHash;
+    await storeCheckout(checkoutId, {
+      title,
+      description,
+      amountSats,
+      metadata,
+      invoice: result.invoice,
+      paymentHash: result.paymentHash,
+      pendingSwap: result.pendingSwap,
+      expiry: result.expiry,
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+
+    return NextResponse.json({ checkoutId });
+  } catch (error) {
+    console.error('Error creating checkout:', error);
+
+    // Print full error details for debugging
+    if (error && typeof error === 'object') {
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      if ('errorData' in error) {
+        console.error('Error data:', JSON.stringify((error as any).errorData, null, 2));
+      }
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create checkout' },
+      { status: 500 }
+    );
+  }
+}
+
+// KV storage helper (uses process.env.KV or memory fallback)
+async function storeCheckout(id: string, data: any) {
+  if (process.env.KV_REST_API_URL) {
+    // Vercel KV
+    const kv = require('@vercel/kv');
+    await kv.set(`checkout:${id}`, JSON.stringify(data), { ex: 3600 });
+  } else {
+    // In-memory fallback for development
+    (global as any).checkoutStore = (global as any).checkoutStore || new Map();
+    (global as any).checkoutStore.set(id, data);
+  }
+}
