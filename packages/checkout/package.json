@@ -45,9 +45,6 @@
     "README.md",
     "VSS_SETUP.md"
   ],
-  "bin": {
-    "create-arkade-checkout": "./dist/cli/create.js"
-  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

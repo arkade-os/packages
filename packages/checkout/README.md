@@ -13,7 +13,7 @@ npm install @arkade-os/checkout
 ### 1. Generate Credentials
 
 ```bash
-npx create-arkade-checkout
+node ./node_modules/@arkade-os/checkout/cli/create.js
 ```
 
 This creates `.env.local` with your private key and configuration:
@@ -27,24 +27,22 @@ ARKADE_NETWORK=bitcoin
 
 ### 2. Add API Route
 
-Create `app/api/arkade/[[...path]]/route.js`:
+Create `app/api/arkade/[[...path]]/route.ts`:
 
-```js
+```ts
 export { POST, GET } from "@arkade-os/checkout/server/route";
 ```
 
 ### 3. Add Checkout Page
 
-Create `app/checkout/[id]/page.js`:
+Create `app/checkout/[id]/page.tsx`:
 
-```jsx
+```tsx
 "use client";
 import { Checkout } from "@arkade-os/checkout";
-import { use } from "react";
 
-export default function CheckoutPage({ params }) {
-  const { id } = use(params);
-  return <Checkout id={id} />;
+export default function CheckoutPage({ params }: { params: { id: string } }) {
+  return <Checkout id={params.id} />;
 }
 ```
 
@@ -62,7 +60,7 @@ export default function HomePage() {
       onClick={() => navigate({
         title: "Premium Plan",
         description: "1 year subscription",
-        amount: 500,
+        amount: 50,
         currency: "USD",
         metadata: { successUrl: "/success" }
       })}
@@ -190,7 +188,7 @@ Without Vercel KV, the package uses in-memory storage (not recommended for produ
 
 ### "Private key not found"
 
-Make sure `.env.local` exists with `ARKADE_PRIVATE_KEY_HEX`. Run `npx create-arkade-checkout` to generate.
+Make sure `.env.local` exists with `ARKADE_PRIVATE_KEY_HEX`. Run `node ./node_modules/@arkade-os/checkout/cli/create.js` to generate.
 
 ### "Checkout not found"
 
