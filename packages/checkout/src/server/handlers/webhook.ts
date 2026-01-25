@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCheckout } from '../storage';
+import { debug } from '../log';
 
 /**
  * Webhook endpoint that triggers the claim process
@@ -70,19 +72,9 @@ async function triggerBackgroundClaim(checkoutId: string) {
       console.error(`Background claim failed: ${response.status}`);
     }
 
-    console.log(`Background claim triggered for checkout ${checkoutId}`);
+    debug(`Background claim triggered for checkout ${checkoutId}`);
   } catch (error) {
     console.error('Failed to trigger background claim:', error);
     // Don't throw - we don't want webhook to fail if claim fails
-  }
-}
-
-async function getCheckout(id: string) {
-  if (process.env.KV_REST_API_URL) {
-    const kv = require('@vercel/kv');
-    const data = await kv.get(`checkout:${id}`);
-    return data ? JSON.parse(data as string) : null;
-  } else {
-    return (global as any).checkoutStore?.get(id) || null;
   }
 }

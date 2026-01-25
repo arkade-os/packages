@@ -2,36 +2,53 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Wallet } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { getCachedPrivateKey } from '../vss';
+import { getCheckout, updateCheckout } from '../storage';
+import { debug } from '../log';
 
 export const maxDuration = 300; // 5 minutes
 
 export async function handleClaim(request: NextRequest) {
   const { checkoutId } = await request.json();
+  debug('[claim] Starting claim for checkoutId:', checkoutId);
 
   const checkout = await getCheckout(checkoutId);
   if (!checkout) {
+    console.error('[claim] Checkout not found:', checkoutId);
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Get private key from VSS
-  const identity = await getCachedPrivateKey();
-  const wallet = await Wallet.create({
-    identity,
-    arkServerUrl: process.env.ARKADE_SERVER_URL || 'https://arkade.computer',
-  });
+  debug('[claim] Checkout found, status:', checkout.status);
 
-  const swapProvider = new BoltzSwapProvider({
-    apiUrl: process.env.BOLTZ_API_URL || 'https://api.ark.boltz.exchange',
-    network: (process.env.ARKADE_NETWORK as any) || 'bitcoin',
-  });
+  if (!checkout.pendingSwap) {
+    console.error('[claim] No pendingSwap data in checkout:', checkoutId);
+    return NextResponse.json({ error: 'No pending swap found' }, { status: 400 });
+  }
 
-  const arkadeLightning = new ArkadeLightning({
-    wallet,
-    swapProvider,
-  });
+  debug('[claim] pendingSwap id:', checkout.pendingSwap.id);
 
   try {
+    // Get private key from VSS
+    debug('[claim] Getting private key...');
+    const identity = await getCachedPrivateKey();
+    debug('[claim] Creating wallet...');
+    const wallet = await Wallet.create({
+      identity,
+      arkServerUrl: process.env.ARKADE_SERVER_URL || 'https://arkade.computer',
+    });
+
+    const swapProvider = new BoltzSwapProvider({
+      apiUrl: process.env.BOLTZ_API_URL || 'https://api.ark.boltz.exchange',
+      network: (process.env.ARKADE_NETWORK as any) || 'bitcoin',
+    });
+
+    const arkadeLightning = new ArkadeLightning({
+      wallet,
+      swapProvider,
+    });
+
+    debug('[claim] Calling waitAndClaim...');
     const result = await arkadeLightning.waitAndClaim(checkout.pendingSwap);
+    debug('[claim] waitAndClaim result:', result);
 
     // Update checkout status
     await updateCheckout(checkoutId, {
@@ -40,30 +57,11 @@ export async function handleClaim(request: NextRequest) {
       paidAt: Date.now(),
     });
 
+    debug('[claim] Checkout updated to paid, txid:', result.txid);
     return NextResponse.json({ status: 'paid', txid: result.txid });
   } catch (error) {
+    console.error('[claim] Error claiming swap:', error);
+    console.error('[claim] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
-  }
-}
-
-async function getCheckout(id: string) {
-  if (process.env.KV_REST_API_URL) {
-    const kv = require('@vercel/kv');
-    const data = await kv.get(`checkout:${id}`);
-    return data ? JSON.parse(data as string) : null;
-  } else {
-    return (global as any).checkoutStore?.get(id) || null;
-  }
-}
-
-async function updateCheckout(id: string, updates: any) {
-  const checkout = await getCheckout(id);
-  const updated = { ...checkout, ...updates };
-
-  if (process.env.KV_REST_API_URL) {
-    const kv = require('@vercel/kv');
-    await kv.set(`checkout:${id}`, JSON.stringify(updated), { ex: 3600 });
-  } else {
-    (global as any).checkoutStore.set(id, updated);
   }
 }

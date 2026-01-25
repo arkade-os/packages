@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import QRCode from "qrcode";
+import { debug } from "../lib/log";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -94,11 +95,21 @@ export function CheckoutModal({ isOpen, onClose, amountSats }: CheckoutModalProp
   }
 
   async function claimPayment(id: string) {
-    await fetch("/api/arkade/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checkoutId: id }),
-    });
+    try {
+      debug('[checkout] Starting claim for:', id);
+      const res = await fetch("/api/arkade/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkoutId: id }),
+      });
+      const data = await res.json();
+      debug('[checkout] Claim response:', res.status, data);
+      if (!res.ok) {
+        console.error('[checkout] Claim failed:', data.error);
+      }
+    } catch (err) {
+      console.error('[checkout] Claim error:', err);
+    }
   }
 
   function pollStatus(id: string) {
@@ -170,6 +181,13 @@ export function CheckoutModal({ isOpen, onClose, amountSats }: CheckoutModalProp
                 Copy
               </button>
             </div>
+
+            {checkout.pendingSwap?.id && (
+              <div className="modal-debug">
+                <span>Swap ID</span>
+                <span className="modal-debug-value">{checkout.pendingSwap.id}</span>
+              </div>
+            )}
 
             <div className="modal-status">
               <div className="pulse-dot" />

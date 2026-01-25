@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                     type="number"
                     value={payoutAmount}
                     onChange={(e) => setPayoutAmount(e.target.value)}
-                    placeholder="21000"
+                    placeholder="400"
                     style={{
                       width: "100%",
                       padding: "0.5rem",

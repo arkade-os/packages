@@ -14,5 +14,6 @@ coverage
 !.env.example
 *.tsbuildinfo
 .eslintcache
-.claude 
+.claude
 CLAUDE.md
+.checkout-store.json

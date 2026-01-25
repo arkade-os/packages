@@ -287,6 +287,26 @@ body {
   background: #2d3748;
 }
 
+.modal-debug {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.modal-debug-value {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+}
+
 .modal-status {
   display: flex;
   align-items: center;

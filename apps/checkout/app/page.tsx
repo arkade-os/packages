@@ -16,14 +16,14 @@ export default function HomePage() {
           onClick={() => setShowCheckout(true)}
           className="coffee-button"
         >
-          Buy Coffee - $1
+          Buy Coffee
         </button>
       </div>
 
       <CheckoutModal
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
-        amountSats={2100}
+        amountSats={400}
       />
     </div>
   );

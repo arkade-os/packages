@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Wallet } from '@arkade-os/sdk';
 import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { getCachedPrivateKey } from '../vss';
+import { setCheckout } from '../storage';
 
 export async function handleCreate(request: NextRequest) {
   try {
@@ -30,9 +31,9 @@ export async function handleCreate(request: NextRequest) {
       description: title,
     });
 
-    // Store checkout in KV
+    // Store checkout
     const checkoutId = result.paymentHash;
-    await storeCheckout(checkoutId, {
+    await setCheckout(checkoutId, {
       title,
       description,
       amountSats,
@@ -64,15 +65,3 @@ export async function handleCreate(request: NextRequest) {
   }
 }
 
-// KV storage helper (uses process.env.KV or memory fallback)
-async function storeCheckout(id: string, data: any) {
-  if (process.env.KV_REST_API_URL) {
-    // Vercel KV
-    const kv = require('@vercel/kv');
-    await kv.set(`checkout:${id}`, JSON.stringify(data), { ex: 3600 });
-  } else {
-    // In-memory fallback for development
-    (global as any).checkoutStore = (global as any).checkoutStore || new Map();
-    (global as any).checkoutStore.set(id, data);
-  }
-}
