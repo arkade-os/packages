@@ -104,7 +104,7 @@ export class ArkadeWallet {
       this.ordinalAddress = ordinalAddress;
       this.paymentAddress = paymentAddress;
 
-      this.identity = new SatsConnectIdentity(fullPubkey, signingAccount.address, this.satsConnectRequest);
+      this.identity = new SatsConnectIdentity(fullPubkey, signingAccount.address, this.satsConnectRequest, this.config.satsConnectNetwork);
 
       this.wallet = await Wallet.create({
         identity: this.identity,

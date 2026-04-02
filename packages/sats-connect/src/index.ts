@@ -4,5 +4,5 @@ export type {
   ArkadeWalletConfig,
   ArkadeWalletInfo,
 } from './types';
-export { SatsConnectIdentity } from './identity/SatsConnectIdentity';
+export { SatsConnectIdentity, type SignRequest } from './identity/SatsConnectIdentity';
 export { ArkadeWallet } from './wallet/ArkadeWallet';
