@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Wallet } from '@arkade-os/sdk';
-import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
+import { ArkadeSwaps, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { getCachedPrivateKey } from '../vss';
 import { setCheckout } from '../storage';
 
@@ -20,7 +20,7 @@ export async function handleCreate(request: NextRequest) {
       network: (process.env.ARKADE_NETWORK as any) || 'bitcoin',
     });
 
-    const arkadeLightning = new ArkadeLightning({
+    const arkadeLightning = new ArkadeSwaps({
       wallet,
       swapProvider,
     });

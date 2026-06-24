@@ -1,14 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { SingleKey } from '@arkade-os/sdk';
 
 async function main() {
   console.log('🎯 Arkade Checkout Setup\n');
 
   // Generate private key
   const privateKey = crypto.randomBytes(32).toString('hex');
-  const identity = SingleKey.fromHex(privateKey);
 
   // Create .env.local entries
   const envContent = `

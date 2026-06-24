@@ -1,5 +1,5 @@
 import { base64, hex } from '@scure/base';
-import { Identity, type SignerSession, Transaction } from '@arkade-os/sdk';
+import { Identity, type SignerSession, type SignRequest, Transaction } from '@arkade-os/sdk';
 import {
   AddressPurpose,
   BitcoinNetworkType,
@@ -23,12 +23,6 @@ function toBitcoinNetworkType(network?: SatsConnectNetwork): BitcoinNetworkType 
     default:
       return BitcoinNetworkType.Mainnet;
   }
-}
-
-/** Signing request for signMultiple — mirrors @arkade-os/sdk SignRequest. */
-export interface SignRequest {
-  tx: Transaction;
-  inputIndexes?: number[];
 }
 
 /**
