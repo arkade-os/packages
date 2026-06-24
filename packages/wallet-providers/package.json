@@ -69,13 +69,13 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@arkade-os/sdk": ">=0.4.14"
+    "@arkade-os/sdk": ">=0.4.15"
   },
   "dependencies": {
     "@scure/base": "^2.0.0"
   },
   "devDependencies": {
-    "@arkade-os/sdk": "^0.4.14",
+    "@arkade-os/sdk": "^0.4.39",
     "@types/node": "^22.0.0",
     "rimraf": "^5.0.0",
     "tsup": "^8.0.0",

@@ -1,23 +1,7 @@
-import { Identity, Transaction } from '@arkade-os/sdk';
-
-/**
- * A single PSBT signing request within a batch.
- * Mirrors the SignRequest type from @arkade-os/sdk (>=0.4.15).
- * TODO: Import from SDK once the BatchSignableIdentity PR is published.
- */
-export interface SignRequest {
-  tx: Transaction;
-  inputIndexes?: number[];
-}
-
-/**
- * Identity that supports signing multiple PSBTs in a single wallet interaction.
- * Mirrors the BatchSignableIdentity type from @arkade-os/sdk (>=0.4.15).
- * TODO: Import from SDK once the BatchSignableIdentity PR is published.
- */
-export interface BatchSignableIdentity extends Identity {
-  signMultiple(requests: SignRequest[]): Promise<Transaction[]>;
-}
+// Batch-signing types now ship in the SDK (added in @arkade-os/sdk >=0.4.15).
+// Re-exported here so the providers and downstream consumers can keep importing
+// them from this package's public surface.
+export type { SignRequest, BatchSignableIdentity } from '@arkade-os/sdk';
 
 /**
  * Window type declarations for browser wallet extensions.
