@@ -36,7 +36,7 @@
     "@scure/base": "^2.0.0"
   },
   "devDependencies": {
-    "@arkade-os/sdk": "^0.4.39",
+    "@arkade-os/sdk": "^0.4.43",
     "@types/node": "^22.0.0",
     "rimraf": "^5.0.0",
     "sats-connect": "^4.2.1",

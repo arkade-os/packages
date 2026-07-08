@@ -38,8 +38,8 @@
     "@arkade-os/sats-connect": "workspace:*"
   },
   "devDependencies": {
-    "@arkade-os/boltz-swap": "^0.3.44",
-    "@arkade-os/sdk": "^0.4.39",
+    "@arkade-os/boltz-swap": "^0.3.48",
+    "@arkade-os/sdk": "^0.4.43",
     "@types/react": "^18.3.0",
     "react": "^18.3.0",
     "rimraf": "^5.0.0",

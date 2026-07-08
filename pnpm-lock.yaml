@@ -139,8 +139,8 @@ importers:
   apps/xverse:
     dependencies:
       '@arkade-os/boltz-swap':
-        specifier: ^0.3.44
-        version: 0.3.44(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.3.48
+        version: 0.3.48(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@arkade-os/sats-connect':
         specifier: workspace:*
         version: link:../../packages/sats-connect
@@ -148,8 +148,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sats-connect-react
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@lendasat/lendaswap-sdk':
         specifier: ^0.1.70
         version: 0.1.70
@@ -218,11 +218,11 @@ importers:
   packages/checkout:
     dependencies:
       '@arkade-os/boltz-swap':
-        specifier: ^0.3.44
-        version: 0.3.44(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.3.48
+        version: 0.3.48(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       next:
         specifier: '>=15.0.0'
         version: 15.5.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -259,8 +259,8 @@ importers:
         version: 2.0.0
     devDependencies:
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@types/node':
         specifier: ^22.0.0
         version: 22.18.10
@@ -284,11 +284,11 @@ importers:
         version: link:../sats-connect
     devDependencies:
       '@arkade-os/boltz-swap':
-        specifier: ^0.3.44
-        version: 0.3.44(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.3.48
+        version: 0.3.48(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@types/react':
         specifier: ^18.3.0
         version: 18.3.26
@@ -311,8 +311,8 @@ importers:
   packages/snap:
     dependencies:
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@metamask/snaps-sdk':
         specifier: ^6.0.0
         version: 6.24.0(webextension-polyfill@0.12.0)
@@ -400,8 +400,8 @@ importers:
         version: 2.0.0
     devDependencies:
       '@arkade-os/sdk':
-        specifier: ^0.4.39
-        version: 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.4.43
+        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@types/node':
         specifier: ^22.0.0
         version: 22.18.10
@@ -417,17 +417,6 @@ importers:
 
 packages:
 
-  '@arkade-os/boltz-swap@0.3.44':
-    resolution: {integrity: sha512-18Vsgv286hsbrp/ICdAlP0XkVQBxcVh6KV3BC+MgD90+9S4GpogFO9Tlb35jpkDYbYLjyPa7quscMOE79Ff1CA==}
-    peerDependencies:
-      expo-background-task: '>=0.1.0'
-      expo-task-manager: '>=3.0.0'
-    peerDependenciesMeta:
-      expo-background-task:
-        optional: true
-      expo-task-manager:
-        optional: true
-
   '@arkade-os/boltz-swap@0.3.48':
     resolution: {integrity: sha512-fQD6/T/Z0BvGkzqduxaGyKEozbE1l2VrMm4aEON5ajIpYokIKUidHR6wv+Qh8Pl4Zm0daVgEWAS+RvB8gzmaDw==}
     peerDependencies:
@@ -435,27 +424,6 @@ packages:
       expo-task-manager: '>=3.0.0'
     peerDependenciesMeta:
       expo-background-task:
-        optional: true
-      expo-task-manager:
-        optional: true
-
-  '@arkade-os/sdk@0.4.39':
-    resolution: {integrity: sha512-Pmj1NMKK6eV9z+XGUs+S0zK14MFnasfLxmmSYhcG9A0dn/d8KLSMxhpxHc6d6mNTpAiVEzS4u/VvSngYbtUgbA==}
-    engines: {node: '>=22.12.0 <25'}
-    peerDependencies:
-      '@react-native-async-storage/async-storage': '>=1.0.0'
-      expo: '>=54.0.0'
-      expo-background-task: ~1.0.10 || >=55.0.0
-      expo-sqlite: ~16.0.10 || >=55.0.0
-      expo-task-manager: ~14.0.9 || >=55.0.0
-    peerDependenciesMeta:
-      '@react-native-async-storage/async-storage':
-        optional: true
-      expo:
-        optional: true
-      expo-background-task:
-        optional: true
-      expo-sqlite:
         optional: true
       expo-task-manager:
         optional: true
@@ -1898,11 +1866,6 @@ packages:
 
   '@lendasat/lendaswap-sdk@0.1.70':
     resolution: {integrity: sha512-avuXJWnRvM8MNkXU3JP1oqT/rDrgoR3ZsLdYCrE9GvBKfS9Kp+WSo00jTevcYBsLkQ/ou7TqgqkP3bsiabBOmA==}
-
-  '@marcbachmann/cel-js@7.3.1':
-    resolution: {integrity: sha512-P6o26TvjStT8V8+8EF+yq9Pp7ZFV00bpiUMbssr76XbIZGxaB+NNWeBp6WNxOrR9gp0JPzvJueCKHpOs5LE9PQ==}
-    engines: {node: '>=20.19.0'}
-    hasBin: true
 
   '@marcbachmann/cel-js@8.0.0':
     resolution: {integrity: sha512-oaTrAziGr3zDLFiMt/yLU3nZuRMawyWQB5X1a0I7s9eGy3JYzX9l8ZXXHyMd64nzbeVFZTewuUShwsZQdK6UCA==}
@@ -6592,26 +6555,6 @@ packages:
 
 snapshots:
 
-  '@arkade-os/boltz-swap@0.3.44(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@arkade-os/sdk': 0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      '@noble/curves': 2.0.1
-      '@noble/hashes': 2.0.1
-      '@scure/base': 2.0.0
-      '@scure/btc-signer': 2.0.1
-      bip68: 1.0.4
-      light-bolt11-decoder: 3.2.0
-    transitivePeerDependencies:
-      - '@ledgerhq/ledger-bitcoin'
-      - '@react-native-async-storage/async-storage'
-      - bip32
-      - bitcoinjs-lib
-      - bufferutil
-      - ecpair
-      - expo
-      - expo-sqlite
-      - utf-8-validate
-
   '@arkade-os/boltz-swap@0.3.48(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@arkade-os/sdk': 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -6630,25 +6573,6 @@ snapshots:
       - ecpair
       - expo
       - expo-sqlite
-      - utf-8-validate
-
-  '@arkade-os/sdk@0.4.39(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@bitcoinerlab/descriptors-scure': 3.1.7
-      '@marcbachmann/cel-js': 7.3.1
-      '@noble/curves': 2.0.1
-      '@noble/secp256k1': 3.0.0
-      '@scure/base': 2.0.0
-      '@scure/bip39': 2.0.1
-      '@scure/btc-signer': 2.0.1
-      bip68: 1.0.4
-      ws-electrumx-client: 1.0.5(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - '@ledgerhq/ledger-bitcoin'
-      - bip32
-      - bitcoinjs-lib
-      - bufferutil
-      - ecpair
       - utf-8-validate
 
   '@arkade-os/sdk@0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
@@ -8086,8 +8010,6 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   '@lendasat/lendaswap-sdk@0.1.70': {}
-
-  '@marcbachmann/cel-js@7.3.1': {}
 
   '@marcbachmann/cel-js@8.0.0': {}
 
