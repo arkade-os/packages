@@ -7,7 +7,7 @@
     "url": "https://github.com/arkade-os/packages.git"
   },
   "source": {
-    "shasum": "pJ5q4dlJxZtmqsPQykmqjv6Cgich3oy8AE73zvxE8mM=",
+    "shasum": "d2S8THO6VgRbOlJSOJwNw4R8CYPOHd500J7GVDiHoSs=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",

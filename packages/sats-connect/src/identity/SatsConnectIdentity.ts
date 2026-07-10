@@ -1,18 +1,50 @@
 import { base64, hex } from '@scure/base';
-import { Identity, type SignerSession, Transaction } from '@arkade-os/sdk';
-import { AddressPurpose } from 'sats-connect';
-import type { SatsConnectRequest } from '../types';
+import { Identity, type SignerSession, type SignRequest, Transaction } from '@arkade-os/sdk';
+import {
+  AddressPurpose,
+  BitcoinNetworkType,
+  signMultipleTransactions,
+  type InputToSign,
+  type SignMultipleTransactionsResponse,
+} from 'sats-connect';
+import type { SatsConnectRequest, SatsConnectNetwork } from '../types';
+
+/** Maps SatsConnectNetwork config strings to BitcoinNetworkType enum values. */
+function toBitcoinNetworkType(network?: SatsConnectNetwork): BitcoinNetworkType {
+  switch (network) {
+    case 'Mainnet':
+      return BitcoinNetworkType.Mainnet;
+    case 'Testnet':
+      return BitcoinNetworkType.Testnet;
+    case 'Signet':
+      return BitcoinNetworkType.Signet;
+    case 'Regtest':
+      return BitcoinNetworkType.Regtest;
+    default:
+      return BitcoinNetworkType.Mainnet;
+  }
+}
 
 /**
  * External wallet identity implementation using sats-connect signPsbt.
  * Delegates signing to the connected Sats Connect wallet.
+ *
+ * Supports batch signing via `signMultiple()` using the sats-connect
+ * `signMultipleTransactions` API, reducing N+1 wallet popups to 1
+ * during Arkade send transactions with checkpoints.
  */
 export class SatsConnectIdentity implements Identity {
   private publicKey: Uint8Array;
   private address: string;
   private satsConnectRequest: SatsConnectRequest;
+  private networkType: BitcoinNetworkType;
 
-  constructor(publicKey: Uint8Array, address: string, satsConnectRequest: SatsConnectRequest) {
+  constructor(
+    publicKey: Uint8Array,
+    address: string,
+    satsConnectRequest: SatsConnectRequest,
+    network?: SatsConnectNetwork,
+  ) {
     if (publicKey.length !== 33 && publicKey.length !== 32) {
       throw new Error(
         `Invalid public key length: ${publicKey.length}. Expected 32 or 33 bytes.`
@@ -21,6 +53,7 @@ export class SatsConnectIdentity implements Identity {
     this.publicKey = publicKey;
     this.address = address;
     this.satsConnectRequest = satsConnectRequest;
+    this.networkType = toBitcoinNetworkType(network);
   }
 
   async xOnlyPublicKey(): Promise<Uint8Array> {
@@ -133,38 +166,7 @@ export class SatsConnectIdentity implements Identity {
         const signedPsbtBase64 = response.result?.psbt ?? (response as any).psbt;
 
         if (signedPsbtBase64) {
-          const signedPsbtBytes = base64.decode(signedPsbtBase64);
-          const signedTx = Transaction.fromPSBT(signedPsbtBytes);
-          // Preserve taproot tree / leaf metadata from the original PSBT.
-          // Some wallets return a PSBT without these fields, which breaks
-          // server-side validation (e.g. "missing taproot tree").
-          const mergedTx = Transaction.fromPSBT(tx.toPSBT());
-          mergedTx.combine(signedTx);
-          const unsignedBefore = tx.unsignedTx;
-          const unsignedAfter = mergedTx.unsignedTx;
-          const unsignedMatches =
-            unsignedBefore.length === unsignedAfter.length &&
-            unsignedBefore.every((byte, index) => byte === unsignedAfter[index]);
-          if (!unsignedMatches) {
-            const prefixLen = 16;
-            const suffixLen = 16;
-            const mismatchDetails = {
-              beforeLength: unsignedBefore.length,
-              afterLength: unsignedAfter.length,
-              beforePrefix: hex.encode(unsignedBefore.slice(0, prefixLen)),
-              afterPrefix: hex.encode(unsignedAfter.slice(0, prefixLen)),
-              beforeSuffix: hex.encode(unsignedBefore.slice(-suffixLen)),
-              afterSuffix: hex.encode(unsignedAfter.slice(-suffixLen)),
-              beforeVersion: tx.version,
-              afterVersion: mergedTx.version,
-              beforeLockTime: tx.lockTime,
-              afterLockTime: mergedTx.lockTime,
-            };
-            throw new Error(
-              `Signed transaction changed the unsigned payload: ${JSON.stringify(mismatchDetails)}`
-            );
-          }
-          return mergedTx;
+          return this.mergeAndValidate(tx, base64.decode(signedPsbtBase64));
         }
         throw new Error('No signed PSBT returned from wallet');
       }
@@ -184,6 +186,47 @@ export class SatsConnectIdentity implements Identity {
       }
       throw error;
     }
+  }
+
+  /**
+   * Sign multiple PSBTs in a single wallet popup using sats-connect's
+   * signMultipleTransactions API. Returns signed Transactions in the
+   * same order as the input requests.
+   */
+  async signMultiple(requests: SignRequest[]): Promise<Transaction[]> {
+    await this.ensureConnected();
+
+    const psbts = requests.map((req) => {
+      const psbtBase64 = base64.encode(req.tx.toPSBT());
+      const indexes = this.buildInputIndexArray(req.tx, req.inputIndexes);
+      const inputsToSign: InputToSign[] = [
+        {
+          address: this.address,
+          signingIndexes: indexes,
+        },
+      ];
+      return { psbtBase64, inputsToSign };
+    });
+
+    const responses = await new Promise<SignMultipleTransactionsResponse>(
+      (resolve, reject) => {
+        signMultipleTransactions({
+          payload: {
+            network: { type: this.networkType },
+            message: 'Sign Arkade transactions',
+            psbts,
+          },
+          onFinish: resolve,
+          onCancel: () => reject(new Error('User cancelled batch signing')),
+        });
+      }
+    );
+
+    return requests.map((req, i) => {
+      const signedPsbtBase64 = responses[i].psbtBase64;
+      const signedPsbtBytes = base64.decode(signedPsbtBase64);
+      return this.mergeAndValidate(req.tx, signedPsbtBytes);
+    });
   }
 
   private async ensureConnected(): Promise<void> {
@@ -211,5 +254,48 @@ export class SatsConnectIdentity implements Identity {
     return {
       [this.address]: Array.from({ length: tx.inputsLength }, (_, i) => i),
     };
+  }
+
+  private buildInputIndexArray(tx: Transaction, inputIndexes?: number[]): number[] {
+    if (inputIndexes && inputIndexes.length > 0) return inputIndexes;
+    return Array.from({ length: tx.inputsLength }, (_, i) => i);
+  }
+
+  /**
+   * Merge a wallet-signed PSBT back onto the original (preserving taproot
+   * metadata) and validate that the unsigned transaction bytes weren't tampered with.
+   */
+  private mergeAndValidate(original: Transaction, signedPsbtBytes: Uint8Array): Transaction {
+    const signedTx = Transaction.fromPSBT(signedPsbtBytes);
+    const mergedTx = Transaction.fromPSBT(original.toPSBT());
+    mergedTx.combine(signedTx);
+
+    const unsignedBefore = original.unsignedTx;
+    const unsignedAfter = mergedTx.unsignedTx;
+    const unsignedMatches =
+      unsignedBefore.length === unsignedAfter.length &&
+      unsignedBefore.every((byte, index) => byte === unsignedAfter[index]);
+
+    if (!unsignedMatches) {
+      const prefixLen = 16;
+      const suffixLen = 16;
+      const mismatchDetails = {
+        beforeLength: unsignedBefore.length,
+        afterLength: unsignedAfter.length,
+        beforePrefix: hex.encode(unsignedBefore.slice(0, prefixLen)),
+        afterPrefix: hex.encode(unsignedAfter.slice(0, prefixLen)),
+        beforeSuffix: hex.encode(unsignedBefore.slice(-suffixLen)),
+        afterSuffix: hex.encode(unsignedAfter.slice(-suffixLen)),
+        beforeVersion: original.version,
+        afterVersion: mergedTx.version,
+        beforeLockTime: original.lockTime,
+        afterLockTime: mergedTx.lockTime,
+      };
+      throw new Error(
+        `Signed transaction changed the unsigned payload: ${JSON.stringify(mismatchDetails)}`
+      );
+    }
+
+    return mergedTx;
   }
 }

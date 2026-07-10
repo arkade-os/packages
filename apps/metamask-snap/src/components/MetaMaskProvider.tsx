@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Wallet, Ramps, RestArkProvider, type NetworkName } from '@arkade-os/sdk';
-import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
+import { ArkadeSwaps, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { MetaMaskSnapIdentity } from '../utils/MetaMaskSnapIdentity';
 
 // Get snap ID from environment variable (defaults to npm package for production)
@@ -134,7 +134,7 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Store wallet and lightning instances
   const [wallet, setWallet] = useState<Wallet | null>(null);
-  const [lightning, setLightning] = useState<ArkadeLightning | null>(null);
+  const [lightning, setLightning] = useState<ArkadeSwaps | null>(null);
 
   /**
    * Detect MetaMask Flask installation status
@@ -298,14 +298,14 @@ export const MetaMaskProvider: React.FC<{ children: ReactNode }> = ({ children }
       const arkAddress = snapArkAddress;
 
       // Initialize Lightning (only if network supports it)
-      let arkLightning: ArkadeLightning | null = null;
+      let arkLightning: ArkadeSwaps | null = null;
       if (networkConfig.hasLightning && networkConfig.boltzUrl) {
         const swapProvider = new BoltzSwapProvider({
           apiUrl: networkConfig.boltzUrl,
           network: networkConfig.networkName as any,
         });
 
-        arkLightning = new ArkadeLightning({
+        arkLightning = new ArkadeSwaps({
           wallet: arkWallet as any, // Type mismatch between SDK versions
           swapProvider,
         });

@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Wallet, Ramps } from '@arkade-os/sdk';
-import { ArkadeLightning, BoltzSwapProvider } from '@arkade-os/boltz-swap';
+import { ArkadeSwaps, BoltzSwapProvider } from '@arkade-os/boltz-swap';
 import { ArkadeWallet } from '@arkade-os/sats-connect';
 import type {
   ArkadeWalletProviderConfig,
@@ -266,7 +266,7 @@ export function ArkadeWalletProvider<TNetwork extends string>({
           apiUrl: networkConfig.boltzUrl,
           network: networkConfig.networkName as 'bitcoin' | 'testnet',
         });
-        const lightning = new ArkadeLightning({
+        const lightning = new ArkadeSwaps({
           wallet: wallet as any,
           swapProvider,
         });
@@ -308,7 +308,7 @@ export function ArkadeWalletProvider<TNetwork extends string>({
           apiUrl: networkConfig.boltzUrl,
           network: networkConfig.networkName as 'bitcoin' | 'testnet',
         });
-        const lightning = new ArkadeLightning({
+        const lightning = new ArkadeSwaps({
           wallet: wallet as any,
           swapProvider,
         });
