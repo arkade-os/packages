@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@arkade-os/boltz-swap':
-        specifier: ^0.3.48
-        version: 0.3.48(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      '@arkade-os/sdk':
-        specifier: ^0.4.43
-        version: 0.4.43(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
