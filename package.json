@@ -1,11 +1,11 @@
 {
-  "name": "arkade-packages",
+  "name": "arkade-wallet-connectors",
   "version": "0.1.0",
   "private": true,
-  "description": "Arkade packages for the web - wallet integrations, checkout, swaps, and more",
+  "description": "Browser wallet connectors for Arkade - MetaMask Snap, Sats Connect, and a shared provider interface",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arkade-os/packages.git"
+    "url": "https://github.com/arkade-os/wallet-connectors.git"
   },
   "license": "MIT",
   "workspaces": [
@@ -14,7 +14,6 @@
   ],
   "scripts": {
     "build": "pnpm -r build",
-    "build:checkout": "pnpm -r --filter @arkade-os/checkout... build",
     "start": "pnpm -r --parallel start",
     "clean": "pnpm -r clean",
     "test": "pnpm --filter './packages/**' -r test",

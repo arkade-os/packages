@@ -1,8 +1,8 @@
-# Arkade Packages
+# Arkade Wallet Connectors
 
-Arkade packages for the web - wallet integrations, checkout, swaps, and more.
+Browser wallet connectors for Arkade - MetaMask Snap, Sats Connect, and a shared provider interface.
 
-Built with [Arkade SDK](https://docs.arkadeos.com/wallets) for instant off-chain Bitcoin transactions (VTXOs) and Lightning Network.
+Built with the [Arkade SDK](https://docs.arkadeos.com/wallets) for instant offchain Bitcoin transactions (virtual transactions) and Lightning Network.
 
 ## How It Works
 
@@ -16,7 +16,7 @@ The Arkade SDK runs in the browser and handles all wallet logic. The wallet prov
 │  │  - Balance queries             │    │
 │  │  - Transaction history         │    │
 │  │  - Lightning operations        │    │
-│  │  - VTXO management             │    │
+│  │  - Virtual output management    │    │
 │  └──────────┬─────────────────────┘    │
 │             │ (signing requests only)   │
 │             ▼                           │
@@ -28,7 +28,12 @@ The Arkade SDK runs in the browser and handles all wallet logic. The wallet prov
 └─────────────────────────────────────────┘
 ```
 
+## Packages
 
+- `@arkade-os/wallet-providers` - shared provider interface the connectors implement
+- `@arkade-os/sats-connect` - Sats Connect connector (Xverse and compatible wallets)
+- `@arkade-os/sats-connect-react` - React bindings for the Sats Connect connector
+- `@arkade-os/snap` - MetaMask Snap for Arkade
 
 ## Getting Started
 
@@ -37,7 +42,7 @@ The Arkade SDK runs in the browser and handles all wallet logic. The wallet prov
 - [Node.js](https://nodejs.org/) v20+
 - [pnpm](https://pnpm.io/) v8+
 - [MetaMask Flask](https://snaps.metamask.io/) with Snaps support
-- [Xverse Wallet](https://xverse.app/) for Sats Connect demo
+- [Xverse Wallet](https://xverse.app/) for the Sats Connect demo
 
 ### Development
 
